@@ -1,13 +1,21 @@
-
 import { useState } from "react";
 
 function ChatHeader({
     name,
     isGroup,
-    onDeleteChat
+    onDeleteChat,
+    onBack
 }) {
     const [showMenu, setShowMenu] =
         useState(false);
+
+    const handleBack = () => {
+        setShowMenu(false);
+
+        if (onBack) {
+            onBack();
+        }
+    };
 
     const handleDeleteChat = async () => {
         setShowMenu(false);
@@ -47,10 +55,41 @@ function ChatHeader({
                 borderBottom: "1px solid #ddd",
                 position: "relative",
                 background: "#fff",
-                zIndex: 20
+                zIndex: 20,
+                boxSizing: "border-box"
             }}
         >
-            {/* Avatar */}
+            {/* =====================================
+                MOBILE BACK BUTTON
+            ====================================== */}
+
+            <button
+                type="button"
+                onClick={handleBack}
+                aria-label="Назад до чатів"
+                className="mobile-back-button"
+                style={{
+                    display: "none",
+                    width: "40px",
+                    height: "40px",
+                    minWidth: "40px",
+                    border: "none",
+                    borderRadius: "50%",
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontSize: "25px",
+                    lineHeight: "1",
+                    color: "#333",
+                    padding: 0
+                }}
+            >
+                ←
+            </button>
+
+
+            {/* =====================================
+                AVATAR
+            ====================================== */}
 
             <div
                 style={{
@@ -62,7 +101,8 @@ function ChatHeader({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontWeight: "bold"
+                    fontWeight: "bold",
+                    fontSize: "17px"
                 }}
             >
                 {name
@@ -70,12 +110,16 @@ function ChatHeader({
                     .toUpperCase()}
             </div>
 
-            {/* Name */}
+
+            {/* =====================================
+                CHAT NAME
+            ====================================== */}
 
             <div
                 style={{
                     flex: 1,
-                    minWidth: 0
+                    minWidth: 0,
+                    overflow: "hidden"
                 }}
             >
                 <div
@@ -83,7 +127,8 @@ function ChatHeader({
                         fontWeight: "600",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        whiteSpace: "nowrap"
+                        whiteSpace: "nowrap",
+                        fontSize: "15px"
                     }}
                 >
                     {name}
@@ -102,12 +147,16 @@ function ChatHeader({
                 </div>
             </div>
 
-            {/* Chat menu */}
+
+            {/* =====================================
+                CHAT MENU
+            ====================================== */}
 
             {!isGroup && (
                 <div
                     style={{
-                        position: "relative"
+                        position: "relative",
+                        flexShrink: 0
                     }}
                 >
                     <button
@@ -117,6 +166,7 @@ function ChatHeader({
                                 (value) => !value
                             )
                         }
+                        aria-label="Меню чату"
                         title="Меню"
                         style={{
                             width: "40px",
@@ -130,11 +180,17 @@ function ChatHeader({
                             cursor: "pointer",
                             fontSize: "24px",
                             lineHeight: "1",
-                            color: "#555"
+                            color: "#555",
+                            padding: 0
                         }}
                     >
                         ⋮
                     </button>
+
+
+                    {/* =================================
+                        DROPDOWN MENU
+                    ================================== */}
 
                     {showMenu && (
                         <div
@@ -143,6 +199,8 @@ function ChatHeader({
                                 top: "46px",
                                 right: "0",
                                 minWidth: "220px",
+                                maxWidth:
+                                    "calc(100vw - 24px)",
                                 background: "#fff",
                                 border: "1px solid #ddd",
                                 borderRadius: "10px",
@@ -164,10 +222,14 @@ function ChatHeader({
                                         "transparent",
                                     padding:
                                         "12px 16px",
-                                    textAlign: "left",
-                                    cursor: "pointer",
-                                    color: "#d32f2f",
-                                    fontSize: "14px"
+                                    textAlign:
+                                        "left",
+                                    cursor:
+                                        "pointer",
+                                    color:
+                                        "#d32f2f",
+                                    fontSize:
+                                        "14px"
                                 }}
                             >
                                 🗑️ Видалити переписку
@@ -176,6 +238,27 @@ function ChatHeader({
                     )}
                 </div>
             )}
+
+
+            {/* =====================================
+                MOBILE STYLES
+            ====================================== */}
+
+            <style>
+                {`
+                    @media (max-width: 768px) {
+                        .mobile-back-button {
+                            display: flex !important;
+                            align-items: center;
+                            justify-content: center;
+                        }
+
+                        .mobile-back-button:active {
+                            background: #f0f0f0 !important;
+                        }
+                    }
+                `}
+            </style>
         </header>
     );
 }

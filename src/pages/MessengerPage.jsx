@@ -1,3 +1,4 @@
+
 import {
     useCallback,
     useEffect,
@@ -40,6 +41,9 @@ function MessengerPage() {
 
     const [chatRequests, setChatRequests] =
         useState([]);
+
+    const [mobileChatOpen, setMobileChatOpen] =
+        useState(false);
 
 
     // ==========================================
@@ -121,6 +125,8 @@ function MessengerPage() {
             );
 
             setMessages([]);
+
+            setMobileChatOpen(false);
         }, []);
 
 
@@ -191,6 +197,7 @@ function MessengerPage() {
             setSelectedChat(null);
             setMessages([]);
             setChatRequests([]);
+            setMobileChatOpen(false);
 
             return;
         }
@@ -271,6 +278,10 @@ function MessengerPage() {
                     setSelectedChat(chat);
                     setMessages([]);
 
+                    // На мобільному відкриваємо
+                    // чат на весь екран.
+                    setMobileChatOpen(true);
+
                     await joinChat(chat.id);
 
                     const data =
@@ -291,6 +302,37 @@ function MessengerPage() {
                 token,
                 selectedChat,
                 joinChat,
+                leaveChat
+            ]
+        );
+
+
+    // ==========================================
+    // CLOSE MOBILE CHAT
+    // ==========================================
+
+    const closeMobileChat =
+        useCallback(
+            async () => {
+                if (selectedChat) {
+                    try {
+                        await leaveChat(
+                            selectedChat.id
+                        );
+                    } catch (error) {
+                        console.error(
+                            "Failed to leave chat:",
+                            error
+                        );
+                    }
+                }
+
+                setSelectedChat(null);
+                setMessages([]);
+                setMobileChatOpen(false);
+            },
+            [
+                selectedChat,
                 leaveChat
             ]
         );
@@ -326,19 +368,16 @@ function MessengerPage() {
                         );
                     }
 
+
                     // ==================================
-                    // FIX:
-                    // Одразу додаємо вибраного користувача
-                    // до members, якщо його там немає.
-                    // Завдяки цьому ім'я показується
-                    // одразу, без перезавантаження.
+                    // ADD SELECTED USER TO MEMBERS
                     // ==================================
 
                     const hasSelectedUser =
                         chat.members?.some(
                             (member) =>
-                                member.id ===
-                                selectedUser.id
+                                Number(member.id) ===
+                                Number(selectedUser.id)
                         );
 
                     if (!hasSelectedUser) {
@@ -358,6 +397,11 @@ function MessengerPage() {
                             ]
                         };
                     }
+
+
+                    // ==================================
+                    // UPDATE CHATS
+                    // ==================================
 
                     setChats(
                         (previousChats) => {
@@ -384,6 +428,11 @@ function MessengerPage() {
                             ];
                         }
                     );
+
+
+                    // ==================================
+                    // OPEN CHAT
+                    // ==================================
 
                     await openChat(chat);
                 } catch (error) {
@@ -594,6 +643,7 @@ function MessengerPage() {
 
                     setSelectedChat(null);
                     setMessages([]);
+                    setMobileChatOpen(false);
                 } catch (error) {
                     console.error(
                         "Failed to delete chat:",
@@ -647,6 +697,11 @@ function MessengerPage() {
                         );
                     }
 
+
+                    // ==================================
+                    // ADD CHAT
+                    // ==================================
+
                     setChats(
                         (previousChats) => {
                             const exists =
@@ -672,6 +727,11 @@ function MessengerPage() {
                             ];
                         }
                     );
+
+
+                    // ==================================
+                    // OPEN CHAT
+                    // ==================================
 
                     await openChat(
                         acceptedChat
@@ -736,8 +796,15 @@ function MessengerPage() {
         );
 
 
+    // ==========================================
+    // RENDER
+    // ==========================================
+
     return (
         <MessengerLayout
+            mobileChatOpen={
+                mobileChatOpen
+            }
             sidebar={
                 <ChatSidebar
                     chats={chats}
@@ -773,8 +840,11 @@ function MessengerPage() {
                         right: "20px",
                         zIndex: 1000,
                         width: "360px",
+                        maxWidth:
+                            "calc(100vw - 40px)",
                         display: "flex",
-                        flexDirection: "column",
+                        flexDirection:
+                            "column",
                         gap: "12px"
                     }}
                 >
@@ -894,8 +964,9 @@ function MessengerPage() {
                 </div>
             )}
 
+
             {/* ======================================
-                MAIN MESSENGER
+                MAIN CHAT
             ====================================== */}
 
             {selectedChat ? (
@@ -909,6 +980,9 @@ function MessengerPage() {
                         }
                         onDeleteChat={
                             handleDeleteChat
+                        }
+                        onBack={
+                            closeMobileChat
                         }
                     />
 
@@ -951,6 +1025,7 @@ function MessengerPage() {
                     Виберіть чат
                 </div>
             )}
+
         </MessengerLayout>
     );
 }
