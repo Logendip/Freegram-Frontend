@@ -1,5 +1,7 @@
+
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { API_URL } from "../services/api";
 
 function LoginPage() {
     const { login } = useAuth();
@@ -73,7 +75,7 @@ function LoginPage() {
             if (isRegister) {
                 const response =
                     await fetch(
-                        "https://localhost:7211/api/Auth/register",
+                        `${API_URL}/api/Auth/register`,
                         {
                             method: "POST",
 
@@ -523,3 +525,4 @@ function LoginPage() {
 }
 
 export default LoginPage;
+
