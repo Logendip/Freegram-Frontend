@@ -52,6 +52,9 @@ function MessengerPage() {
     const [groupInvitations, setGroupInvitations] =
         useState([]);
 
+    const [notifications, setNotifications] =
+        useState([]);
+
     const [mobileChatOpen, setMobileChatOpen] =
         useState(false);
 
@@ -692,8 +695,6 @@ function MessengerPage() {
                 );
 
 
-                // Якщо це відповідь на наш запит —
-                // можна одразу відкрити чат.
                 if (
                     data.userId ??
                     data.UserId
@@ -719,9 +720,36 @@ function MessengerPage() {
                 const message =
                     data.message ??
                     data.Message ??
-                    "Чат не створився, тому що користувач відхилив ваше запрошення.";
+                    "Користувач відхилив ваше запрошення.";
 
-                alert(message);
+                const notificationId =
+                    Date.now() +
+                    Math.random();
+
+
+                setNotifications(
+                    (previousNotifications) => [
+                        ...previousNotifications,
+                        {
+                            id:
+                                notificationId,
+
+                            message
+                        }
+                    ]
+                );
+
+
+                setTimeout(() => {
+                    setNotifications(
+                        (previousNotifications) =>
+                            previousNotifications.filter(
+                                (notification) =>
+                                    notification.id !==
+                                    notificationId
+                            )
+                    );
+                }, 5000);
             },
             []
         );
@@ -1403,6 +1431,7 @@ function MessengerPage() {
             setMessages([]);
             setChatRequests([]);
             setGroupInvitations([]);
+            setNotifications([]);
             setMobileChatOpen(false);
 
             markedAsReadRef.current.clear();
@@ -2708,6 +2737,11 @@ function MessengerPage() {
             ? groupInvitations
             : [];
 
+    const safeNotifications =
+        Array.isArray(notifications)
+            ? notifications
+            : [];
+
 
     // ==========================================
     // RENDER
@@ -2755,6 +2789,117 @@ function MessengerPage() {
                 />
             }
         >
+
+            {/* =====================================
+                SIGNALR NOTIFICATIONS
+            ====================================== */}
+
+            {safeNotifications.length > 0 && (
+                <div
+                    style={{
+                        position:
+                            "fixed",
+
+                        top:
+                            "20px",
+
+                        right:
+                            "20px",
+
+                        zIndex:
+                            2000,
+
+                        width:
+                            "360px",
+
+                        maxWidth:
+                            "calc(100vw - 40px)",
+
+                        display:
+                            "flex",
+
+                        flexDirection:
+                            "column",
+
+                        gap:
+                            "10px",
+
+                        pointerEvents:
+                            "none"
+                    }}
+                >
+                    {safeNotifications.map(
+                        (notification) => (
+                            <div
+                                key={
+                                    notification.id
+                                }
+                                style={{
+                                    background:
+                                        "#ffffff",
+
+                                    color:
+                                        "#222",
+
+                                    border:
+                                        "1px solid #ddd",
+
+                                    borderRadius:
+                                        "12px",
+
+                                    padding:
+                                        "14px 16px",
+
+                                    boxShadow:
+                                        "0 8px 30px rgba(0,0,0,0.18)",
+
+                                    display:
+                                        "flex",
+
+                                    alignItems:
+                                        "flex-start",
+
+                                    gap:
+                                        "10px",
+
+                                    pointerEvents:
+                                        "auto"
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize:
+                                            "20px",
+
+                                        lineHeight:
+                                            "1"
+                                    }}
+                                >
+                                    🔔
+                                </div>
+
+                                <div
+                                    style={{
+                                        flex:
+                                            1,
+
+                                        fontSize:
+                                            "14px",
+
+                                        lineHeight:
+                                            "1.4"
+                                    }}
+                                >
+                                    {
+                                        notification.message
+                                    }
+                                </div>
+                            </div>
+                        )
+                    )}
+                </div>
+            )}
+
 
             {/* =====================================
                 PRIVATE CHAT REQUESTS
