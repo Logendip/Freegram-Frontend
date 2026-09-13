@@ -14,18 +14,12 @@ function MessengerLayout({
                 overflow: "hidden"
             }}
         >
-            {/* ======================================
-                SIDEBAR
-            ====================================== */}
-
             <aside
-                className={
-                    `messenger-sidebar ${
-                        mobileChatOpen
-                            ? "mobile-chat-open"
-                            : ""
-                    }`
-                }
+                className={`messenger-sidebar ${
+                    mobileChatOpen
+                        ? "mobile-chat-open"
+                        : ""
+                }`}
                 style={{
                     width: "320px",
                     minWidth: "320px",
@@ -37,19 +31,12 @@ function MessengerLayout({
                 {sidebar}
             </aside>
 
-
-            {/* ======================================
-                MAIN CHAT
-            ====================================== */}
-
             <main
-                className={
-                    `messenger-main ${
-                        mobileChatOpen
-                            ? "mobile-chat-open"
-                            : ""
-                    }`
-                }
+                className={`messenger-main ${
+                    mobileChatOpen
+                        ? "mobile-chat-open"
+                        : ""
+                }`}
                 style={{
                     flex: 1,
                     minWidth: 0,
@@ -63,45 +50,21 @@ function MessengerLayout({
                 {children}
             </main>
 
-
-            {/* ======================================
-                RESPONSIVE
-            ====================================== */}
-
             <style>
                 {`
-                    /*
-                     * DESKTOP
-                     * ----------------------------------
-                     * Sidebar: 320px
-                     * Chat: remaining space
-                     */
-
                     @media (min-width: 769px) {
                         .messenger-sidebar {
                             display: flex !important;
+                            transform: none !important;
                         }
 
                         .messenger-main {
                             display: flex !important;
+                            transform: none !important;
                         }
                     }
 
-
-                    /*
-                     * MOBILE
-                     * ----------------------------------
-                     * Only one screen is visible:
-                     *
-                     * mobileChatOpen = false
-                     * -> sidebar
-                     *
-                     * mobileChatOpen = true
-                     * -> chat
-                     */
-
                     @media (max-width: 768px) {
-
                         .messenger-layout {
                             position: relative;
                             width: 100%;
@@ -109,49 +72,52 @@ function MessengerLayout({
                             overflow: hidden;
                         }
 
-
-                        /* ==========================
-                           SIDEBAR
-                        ========================== */
-
                         .messenger-sidebar {
+                            position: absolute;
+                            inset: 0;
                             width: 100% !important;
                             min-width: 100% !important;
                             max-width: 100% !important;
                             height: 100% !important;
-                            flex: 0 0 100% !important;
                             overflow: hidden;
-                            display: flex;
-                        }
 
+                            transform: translateX(0);
+                            transition:
+                                transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+
+                            z-index: 2;
+                        }
 
                         .messenger-sidebar.mobile-chat-open {
-                            display: none !important;
+                            transform: translateX(-100%);
                         }
 
-
-                        /* ==========================
-                           CHAT
-                        ========================== */
-
                         .messenger-main {
+                            position: absolute;
+                            inset: 0;
                             width: 100% !important;
                             min-width: 100% !important;
                             max-width: 100% !important;
                             height: 100% !important;
-                            flex: 0 0 100% !important;
                             overflow: hidden;
-                            display: flex;
+
+                            transform: translateX(100%);
+                            transition:
+                                transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+
+                            z-index: 1;
                         }
 
-
-                        /*
-                         * Коли чат відкритий,
-                         * він займає весь екран.
-                         */
-
                         .messenger-main.mobile-chat-open {
-                            display: flex !important;
+                            transform: translateX(0);
+                            z-index: 3;
+                        }
+                    }
+
+                    @media (prefers-reduced-motion: reduce) {
+                        .messenger-sidebar,
+                        .messenger-main {
+                            transition: none !important;
                         }
                     }
                 `}
