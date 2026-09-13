@@ -25,6 +25,9 @@ function MessageBubble({
         Number(message.sender?.id) ===
         Number(currentUserId);
 
+    const isRead =
+        Boolean(message.isRead);
+
 
     // ==========================================
     // DETERMINE MENU POSITION
@@ -35,114 +38,100 @@ function MessageBubble({
             return;
         }
 
-        const updateMenuPlacement =
-            () => {
-                if (
-                    !bubbleRef.current
-                ) {
-                    return;
-                }
+        const updateMenuPlacement = () => {
+            if (!bubbleRef.current) {
+                return;
+            }
 
-                const bubble =
-                    bubbleRef.current;
+            const bubble =
+                bubbleRef.current;
 
-                const rect =
-                    bubble.getBoundingClientRect();
+            const rect =
+                bubble.getBoundingClientRect();
 
-                // Знаходимо найближчий scroll-контейнер.
-                // У нашому випадку це MessageList.
-                let scrollParent =
-                    bubble.parentElement;
+            let scrollParent =
+                bubble.parentElement;
 
-                while (
-                    scrollParent &&
-                    scrollParent !==
-                        document.body
-                ) {
-                    const style =
-                        window.getComputedStyle(
-                            scrollParent
-                        );
-
-                    const overflowY =
-                        style.overflowY;
-
-                    if (
-                        overflowY ===
-                            "auto" ||
-                        overflowY ===
-                            "scroll"
-                    ) {
-                        break;
-                    }
-
-                    scrollParent =
-                        scrollParent.parentElement;
-                }
-
-                let containerTop = 0;
-                let containerBottom =
-                    window.innerHeight;
-
-                if (
-                    scrollParent &&
-                    scrollParent !==
-                        document.body
-                ) {
-                    const containerRect =
-                        scrollParent.getBoundingClientRect();
-
-                    containerTop =
-                        containerRect.top;
-
-                    containerBottom =
-                        containerRect.bottom;
-                }
-
-                // Приблизна висота меню.
-                const menuHeight = 55;
-
-                // Відступ від bubble до меню.
-                const menuGap = 6;
-
-                const spaceAbove =
-                    rect.top -
-                    containerTop;
-
-                const spaceBelow =
-                    containerBottom -
-                    rect.bottom;
-
-                // Якщо зверху недостатньо місця,
-                // відкриваємо меню вниз.
-                if (
-                    spaceAbove <
-                    menuHeight + menuGap
-                ) {
-                    setMenuPlacement(
-                        "below"
+            while (
+                scrollParent &&
+                scrollParent !==
+                    document.body
+            ) {
+                const style =
+                    window.getComputedStyle(
+                        scrollParent
                     );
-                    return;
-                }
 
-                // Якщо знизу недостатньо місця,
-                // відкриваємо меню вгору.
+                const overflowY =
+                    style.overflowY;
+
                 if (
-                    spaceBelow <
-                    menuHeight + menuGap
+                    overflowY === "auto" ||
+                    overflowY === "scroll"
                 ) {
-                    setMenuPlacement(
-                        "above"
-                    );
-                    return;
+                    break;
                 }
 
-                // Якщо місця достатньо з обох боків —
-                // відкриваємо вгору.
+                scrollParent =
+                    scrollParent.parentElement;
+            }
+
+            let containerTop = 0;
+            let containerBottom =
+                window.innerHeight;
+
+            if (
+                scrollParent &&
+                scrollParent !==
+                    document.body
+            ) {
+                const containerRect =
+                    scrollParent.getBoundingClientRect();
+
+                containerTop =
+                    containerRect.top;
+
+                containerBottom =
+                    containerRect.bottom;
+            }
+
+            const menuHeight = 55;
+            const menuGap = 6;
+
+            const spaceAbove =
+                rect.top -
+                containerTop;
+
+            const spaceBelow =
+                containerBottom -
+                rect.bottom;
+
+            if (
+                spaceAbove <
+                menuHeight + menuGap
+            ) {
+                setMenuPlacement(
+                    "below"
+                );
+
+                return;
+            }
+
+            if (
+                spaceBelow <
+                menuHeight + menuGap
+            ) {
                 setMenuPlacement(
                     "above"
                 );
-            };
+
+                return;
+            }
+
+            setMenuPlacement(
+                "above"
+            );
+        };
 
         updateMenuPlacement();
 
@@ -263,7 +252,8 @@ function MessageBubble({
                         }
                     </div>
 
-                    {/* TIME + MENU */}
+
+                    {/* TIME + STATUS + MENU */}
 
                     <div
                         style={{
@@ -282,6 +272,36 @@ function MessageBubble({
                                 "4px"
                         }}
                     >
+                        {/* READ STATUS */}
+
+                        {isOwn && (
+                            <span
+                                title={
+                                    isRead
+                                        ? "Прочитано"
+                                        : "Надіслано"
+                                }
+                                style={{
+                                    fontSize:
+                                        "12px",
+                                    fontWeight:
+                                        "600",
+                                    color:
+                                        isRead
+                                            ? "#2563eb"
+                                            : "#777",
+                                    letterSpacing:
+                                        "-2px"
+                                }}
+                            >
+                                {isRead
+                                    ? "✓✓"
+                                    : "✓"}
+                            </span>
+                        )}
+
+                        {/* MENU */}
+
                         <button
                             type="button"
                             onClick={() =>
@@ -313,6 +333,8 @@ function MessageBubble({
                             ⋮
                         </button>
 
+                        {/* TIME */}
+
                         <span>
                             {new Date(
                                 message.createdAt
@@ -339,7 +361,6 @@ function MessageBubble({
                         style={{
                             position:
                                 "absolute",
-
                             right: "0",
 
                             ...(menuPlacement ===
@@ -371,8 +392,6 @@ function MessageBubble({
                             overflow:
                                 "hidden",
 
-                            // Меню має бути вище
-                            // інших елементів.
                             zIndex: 1000
                         }}
                     >

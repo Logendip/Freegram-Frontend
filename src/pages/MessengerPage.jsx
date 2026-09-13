@@ -1,6 +1,7 @@
 import {
     useCallback,
     useEffect,
+    useRef,
     useState
 } from "react";
 
@@ -44,6 +45,17 @@ function MessengerPage() {
     const [mobileChatOpen, setMobileChatOpen] =
         useState(false);
 
+    /*
+     * Зберігаємо ID повідомлень, які вже
+     * відправлялися на MarkMessageAsRead.
+     *
+     * Це не дає React effect постійно
+     * викликати backend для одного
+     * й того самого повідомлення.
+     */
+    const markedAsReadRef =
+        useRef(new Set());
+
 
     // ==========================================
     // SIGNALR CALLBACKS
@@ -75,11 +87,80 @@ function MessengerPage() {
 
                     return [
                         ...safeMessages,
-                        message
+                        {
+                            ...message,
+
+                            /*
+                             * Нове повідомлення
+                             * ще не вважаємо прочитаним.
+                             */
+                            isRead:
+                                Boolean(
+                                    message.isRead
+                                )
+                        }
                     ];
                 }
             );
         }, []);
+
+
+    /*
+     * Спрацьовує на комп'ютері/телефоні
+     * відправника, коли отримувач
+     * прочитав його повідомлення.
+     */
+    const handleMessageRead =
+        useCallback((data) => {
+            if (!data) {
+                return;
+            }
+
+            setMessages(
+                (previousMessages) => {
+                    const safeMessages =
+                        Array.isArray(
+                            previousMessages
+                        )
+                            ? previousMessages
+                            : [];
+
+                    /*
+                     * Не оновлюємо повідомлення
+                     * з іншого чату.
+                     */
+                    if (
+                        selectedChat &&
+                        Number(data.chatId) !==
+                            Number(
+                                selectedChat.id
+                            )
+                    ) {
+                        return safeMessages;
+                    }
+
+                    return safeMessages.map(
+                        (message) => {
+                            if (
+                                Number(
+                                    message.id
+                                ) !==
+                                Number(
+                                    data.messageId
+                                )
+                            ) {
+                                return message;
+                            }
+
+                            return {
+                                ...message,
+                                isRead: true
+                            };
+                        }
+                    );
+                }
+            );
+        }, [selectedChat]);
 
 
     const handleMessageDeletedForEveryone =
@@ -160,6 +241,8 @@ function MessengerPage() {
 
             setMessages([]);
 
+            markedAsReadRef.current.clear();
+
             setMobileChatOpen(false);
         }, []);
 
@@ -207,6 +290,7 @@ function MessengerPage() {
         joinChat,
         leaveChat,
         sendMessage,
+        markMessageAsRead,
         deleteMessageForEveryone,
         deleteMessageForMe
     } = useSignalR({
@@ -214,6 +298,9 @@ function MessengerPage() {
 
         onReceiveMessage:
             handleReceiveMessage,
+
+        onMessageRead:
+            handleMessageRead,
 
         onMessageDeletedForEveryone:
             handleMessageDeletedForEveryone,
@@ -233,6 +320,97 @@ function MessengerPage() {
 
 
     // ==========================================
+    // MARK MESSAGES AS READ
+    // ==========================================
+
+    useEffect(() => {
+        if (
+            !selectedChat ||
+            !user ||
+            !Array.isArray(messages) ||
+            messages.length === 0
+        ) {
+            return;
+        }
+
+        const markUnreadMessages =
+            async () => {
+                for (
+                    const message
+                    of messages
+                ) {
+                    /*
+                     * Читаємо тільки чужі
+                     * повідомлення.
+                     */
+                    if (
+                        Number(
+                            message.sender?.id
+                        ) ===
+                        Number(user.id)
+                    ) {
+                        continue;
+                    }
+
+                    /*
+                     * Якщо повідомлення вже
+                     * позначене прочитаним —
+                     * нічого не робимо.
+                     */
+                    if (message.isRead) {
+                        continue;
+                    }
+
+                    /*
+                     * Якщо вже відправляли
+                     * MarkMessageAsRead —
+                     * повторно не викликаємо.
+                     */
+                    if (
+                        markedAsReadRef.current.has(
+                            message.id
+                        )
+                    ) {
+                        continue;
+                    }
+
+                    markedAsReadRef.current.add(
+                        message.id
+                    );
+
+                    try {
+                        await markMessageAsRead(
+                            selectedChat.id,
+                            message.id
+                        );
+                    } catch (error) {
+                        /*
+                         * Якщо виклик не вдався,
+                         * дозволяємо повторити
+                         * його пізніше.
+                         */
+                        markedAsReadRef.current.delete(
+                            message.id
+                        );
+
+                        console.error(
+                            "Failed to mark message as read:",
+                            error
+                        );
+                    }
+                }
+            };
+
+        markUnreadMessages();
+    }, [
+        selectedChat,
+        messages,
+        user,
+        markMessageAsRead
+    ]);
+
+
+    // ==========================================
     // LOAD CHATS
     // ==========================================
 
@@ -244,6 +422,8 @@ function MessengerPage() {
             setChatRequests([]);
             setMobileChatOpen(false);
 
+            markedAsReadRef.current.clear();
+
             return;
         }
 
@@ -253,11 +433,6 @@ function MessengerPage() {
                     const data =
                         await getChats(token);
 
-                    /*
-                     * API повинна повернути масив.
-                     * Якщо з якихось причин прийшов
-                     * undefined/null — використовуємо [].
-                     */
                     setChats(
                         Array.isArray(data)
                             ? data
@@ -337,6 +512,13 @@ function MessengerPage() {
                         );
                     }
 
+                    /*
+                     * Новий чат — новий набір
+                     * повідомлень, які треба
+                     * позначати прочитаними.
+                     */
+                    markedAsReadRef.current.clear();
+
                     setSelectedChat(chat);
                     setMessages([]);
 
@@ -352,7 +534,15 @@ function MessengerPage() {
 
                     setMessages(
                         Array.isArray(data)
-                            ? data
+                            ? data.map(
+                                (message) => ({
+                                    ...message,
+                                    isRead:
+                                        Boolean(
+                                            message.isRead
+                                        )
+                                })
+                            )
                             : []
                     );
                 } catch (error) {
@@ -396,6 +586,8 @@ function MessengerPage() {
                 setSelectedChat(null);
                 setMessages([]);
                 setMobileChatOpen(false);
+
+                markedAsReadRef.current.clear();
             },
             [
                 selectedChat,
@@ -741,6 +933,8 @@ function MessengerPage() {
                     setSelectedChat(null);
                     setMessages([]);
                     setMobileChatOpen(false);
+
+                    markedAsReadRef.current.clear();
                 } catch (error) {
                     console.error(
                         "Failed to delete chat:",

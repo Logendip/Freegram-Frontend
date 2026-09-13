@@ -14,6 +14,7 @@ import { createChatConnection } from "../services/signalr";
 export function useSignalR({
     token,
     onReceiveMessage,
+    onMessageRead,
     onMessageDeletedForEveryone,
     onMessageDeletedForMe,
     onChatDeleted,
@@ -24,6 +25,7 @@ export function useSignalR({
 
     const callbacksRef = useRef({
         onReceiveMessage,
+        onMessageRead,
         onMessageDeletedForEveryone,
         onMessageDeletedForMe,
         onChatDeleted,
@@ -39,6 +41,7 @@ export function useSignalR({
     useEffect(() => {
         callbacksRef.current = {
             onReceiveMessage,
+            onMessageRead,
             onMessageDeletedForEveryone,
             onMessageDeletedForMe,
             onChatDeleted,
@@ -47,6 +50,7 @@ export function useSignalR({
         };
     }, [
         onReceiveMessage,
+        onMessageRead,
         onMessageDeletedForEveryone,
         onMessageDeletedForMe,
         onChatDeleted,
@@ -70,6 +74,16 @@ export function useSignalR({
                 callbacksRef.current
                     .onReceiveMessage?.(
                         message
+                    );
+            }
+        );
+
+        connection.on(
+            "MessageRead",
+            (data) => {
+                callbacksRef.current
+                    .onMessageRead?.(
+                        data
                     );
             }
         );
@@ -386,6 +400,24 @@ export function useSignalR({
             [waitForConnection]
         );
 
+    const markMessageAsRead =
+        useCallback(
+            async (
+                chatId,
+                messageId
+            ) => {
+                const connection =
+                    await waitForConnection();
+
+                await connection.invoke(
+                    "MarkMessageAsRead",
+                    chatId,
+                    messageId
+                );
+            },
+            [waitForConnection]
+        );
+
     const deleteMessageForEveryone =
         useCallback(
             async (
@@ -427,6 +459,7 @@ export function useSignalR({
         joinChat,
         leaveChat,
         sendMessage,
+        markMessageAsRead,
         deleteMessageForEveryone,
         deleteMessageForMe
     };

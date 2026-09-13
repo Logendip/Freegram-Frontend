@@ -1,3 +1,4 @@
+
 import {
     useEffect,
     useRef
@@ -13,15 +14,26 @@ function MessageList({
 }) {
     const bottomRef = useRef(null);
 
+    const safeMessages =
+        Array.isArray(messages)
+            ? messages
+            : [];
+
+
+    // ==========================================
+    // AUTO SCROLL
+    // ==========================================
+
     useEffect(() => {
         bottomRef.current?.scrollIntoView({
             behavior: "smooth"
         });
     }, [messages]);
 
-    const safeMessages = Array.isArray(messages)
-        ? messages
-        : [];
+
+    // ==========================================
+    // RENDER
+    // ==========================================
 
     return (
         <div
@@ -51,21 +63,23 @@ function MessageList({
                     Повідомлень поки немає.
                 </div>
             ) : (
-                safeMessages.map((message) => (
-                    <MessageBubble
-                        key={message.id}
-                        message={message}
-                        currentUserId={
-                            currentUserId
-                        }
-                        onDeleteForEveryone={
-                            onDeleteForEveryone
-                        }
-                        onDeleteForMe={
-                            onDeleteForMe
-                        }
-                    />
-                ))
+                safeMessages.map(
+                    (message) => (
+                        <MessageBubble
+                            key={message.id}
+                            message={message}
+                            currentUserId={
+                                currentUserId
+                            }
+                            onDeleteForEveryone={
+                                onDeleteForEveryone
+                            }
+                            onDeleteForMe={
+                                onDeleteForMe
+                            }
+                        />
+                    )
+                )
             )}
 
             <div
@@ -79,3 +93,4 @@ function MessageList({
 }
 
 export default MessageList;
+
