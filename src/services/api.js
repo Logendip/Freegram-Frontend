@@ -18,6 +18,7 @@ async function request(url, options = {}) {
     return response.json();
 }
 
+
 export async function loginUser(
     nickname,
     password
@@ -33,6 +34,7 @@ export async function loginUser(
         })
     });
 }
+
 
 export async function registerUser(
     nickname,
@@ -50,6 +52,7 @@ export async function registerUser(
     });
 }
 
+
 export async function getChats(token) {
     return request("/api/Chats", {
         headers: {
@@ -57,6 +60,7 @@ export async function getChats(token) {
         }
     });
 }
+
 
 export async function getMessages(
     token,
@@ -72,17 +76,22 @@ export async function getMessages(
     );
 }
 
+
 export async function createPrivateChat(
     token,
     userId
 ) {
     return request(
-        `/api/Chats/private/${userId}`,
+        `/api/Chats/private`,
         {
             method: "POST",
             headers: {
+                "Content-Type": "application/json",
                 Authorization: `Bearer ${token}`
-            }
+            },
+            body: JSON.stringify({
+                userId
+            })
         }
     );
 }
@@ -115,7 +124,32 @@ export async function createGroupChat(
 
 
 // ==========================================
-// DELETE GROUP MEMBER
+// ADD GROUP MEMBER
+// ==========================================
+
+export async function addGroupMember(
+    token,
+    chatId,
+    userId
+) {
+    return request(
+        `/api/Chats/group/${chatId}/members`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                userId
+            })
+        }
+    );
+}
+
+
+// ==========================================
+// REMOVE GROUP MEMBER
 // ==========================================
 
 export async function removeGroupMember(
@@ -136,7 +170,7 @@ export async function removeGroupMember(
 
 
 // ==========================================
-// DELETE CHAT
+// DELETE CHAT / GROUP
 // ==========================================
 
 export async function deleteChat(
@@ -193,6 +227,7 @@ export async function getChatRequests(
     );
 }
 
+
 export async function acceptChatRequest(
     token,
     requestId
@@ -207,6 +242,7 @@ export async function acceptChatRequest(
         }
     );
 }
+
 
 export async function rejectChatRequest(
     token,
@@ -241,6 +277,7 @@ export async function getGroupInvitations(
     );
 }
 
+
 export async function acceptGroupInvitation(
     token,
     invitationId
@@ -255,6 +292,7 @@ export async function acceptGroupInvitation(
         }
     );
 }
+
 
 export async function ignoreGroupInvitation(
     token,

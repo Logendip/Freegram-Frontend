@@ -10,9 +10,11 @@ import {
     HubConnectionState
 } from "@microsoft/signalr";
 
+
 const API_BASE_URL =
     import.meta.env.VITE_API_URL ||
     "http://localhost:5000";
+
 
 export function useSignalR({
     token,
@@ -25,10 +27,12 @@ export function useSignalR({
     onChatRequestAccepted,
     onGroupInvitationReceived,
     onGroupInvitationAccepted,
+    onGroupMemberAdded,
     onGroupMemberRemoved
 }) {
     const connectionRef =
         useRef(null);
+
 
     const callbacksRef =
         useRef({
@@ -41,8 +45,10 @@ export function useSignalR({
             onChatRequestAccepted,
             onGroupInvitationReceived,
             onGroupInvitationAccepted,
+            onGroupMemberAdded,
             onGroupMemberRemoved
         });
+
 
     const [
         connectionState,
@@ -67,6 +73,7 @@ export function useSignalR({
             onChatRequestAccepted,
             onGroupInvitationReceived,
             onGroupInvitationAccepted,
+            onGroupMemberAdded,
             onGroupMemberRemoved
         };
     }, [
@@ -79,6 +86,7 @@ export function useSignalR({
         onChatRequestAccepted,
         onGroupInvitationReceived,
         onGroupInvitationAccepted,
+        onGroupMemberAdded,
         onGroupMemberRemoved
     ]);
 
@@ -92,6 +100,7 @@ export function useSignalR({
             return;
         }
 
+
         const connection =
             new HubConnectionBuilder()
                 .withUrl(
@@ -103,6 +112,7 @@ export function useSignalR({
                 )
                 .withAutomaticReconnect()
                 .build();
+
 
         connectionRef.current =
             connection;
@@ -244,6 +254,21 @@ export function useSignalR({
 
 
         // ==========================================
+        // GROUP MEMBER ADDED
+        // ==========================================
+
+        connection.on(
+            "GroupMemberAdded",
+            (data) => {
+                callbacksRef.current
+                    .onGroupMemberAdded?.(
+                        data
+                    );
+            }
+        );
+
+
+        // ==========================================
         // GROUP MEMBER REMOVED
         // ==========================================
 
@@ -268,11 +293,13 @@ export function useSignalR({
             );
         });
 
+
         connection.onreconnected(() => {
             setConnectionState(
                 HubConnectionState.Connected
             );
         });
+
 
         connection.onclose(() => {
             setConnectionState(
@@ -364,6 +391,7 @@ export function useSignalR({
                                     },
                                     10000
                                 );
+
 
                             const check =
                                 () => {

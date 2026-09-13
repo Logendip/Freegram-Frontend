@@ -1,11 +1,22 @@
-import { useState } from "react";
+import {
+    useEffect,
+    useState
+} from "react";
+
+import {
+    searchUsers
+} from "../../services/api";
+
 
 function ChatHeader({
     name,
     isGroup,
     members,
     currentUserId,
+    creatorId,
     isGroupCreator,
+    token,
+    onAddGroupMember,
     onRemoveGroupMember,
     onDeleteChat,
     onBack
@@ -16,14 +27,104 @@ function ChatHeader({
     const [showMembers, setShowMembers] =
         useState(false);
 
+    const [showAddMember, setShowAddMember] =
+        useState(false);
+
+    const [search, setSearch] =
+        useState("");
+
+    const [searchResults, setSearchResults] =
+        useState([]);
+
+    const [searchLoading, setSearchLoading] =
+        useState(false);
+
+    const [addingUserId, setAddingUserId] =
+        useState(null);
+
+
     const safeMembers =
         Array.isArray(members)
             ? members
             : [];
 
+
+    // ==========================================
+    // SEARCH USERS
+    // ==========================================
+
+    useEffect(() => {
+        if (
+            !showAddMember ||
+            !token ||
+            !search.trim()
+        ) {
+            setSearchResults([]);
+            setSearchLoading(false);
+
+            return;
+        }
+
+        let cancelled = false;
+
+        const timeout =
+            setTimeout(
+                async () => {
+                    try {
+                        setSearchLoading(true);
+
+                        const data =
+                            await searchUsers(
+                                token,
+                                search.trim()
+                            );
+
+                        if (!cancelled) {
+                            setSearchResults(
+                                Array.isArray(data)
+                                    ? data
+                                    : []
+                            );
+                        }
+                    } catch (error) {
+                        if (!cancelled) {
+                            console.error(
+                                "Failed to search users:",
+                                error
+                            );
+
+                            setSearchResults([]);
+                        }
+                    } finally {
+                        if (!cancelled) {
+                            setSearchLoading(false);
+                        }
+                    }
+                },
+                300
+            );
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timeout);
+        };
+    }, [
+        showAddMember,
+        token,
+        search
+    ]);
+
+
+    // ==========================================
+    // CLOSE
+    // ==========================================
+
     const handleBack = () => {
         setShowMenu(false);
         setShowMembers(false);
+        setShowAddMember(false);
+        setSearch("");
+        setSearchResults([]);
 
         if (onBack) {
             onBack();
@@ -32,15 +133,19 @@ function ChatHeader({
 
 
     // ==========================================
-    // DELETE PRIVATE CHAT
+    // DELETE CHAT / GROUP
     // ==========================================
 
     const handleDeleteChat = async () => {
         setShowMenu(false);
 
-        const confirmed = window.confirm(
-            `Видалити всю переписку з "${name}"?`
-        );
+        const message =
+            isGroup
+                ? `Видалити групу "${name}" для всіх учасників?`
+                : `Видалити всю переписку з "${name}"?`;
+
+        const confirmed =
+            window.confirm(message);
 
         if (!confirmed) {
             return;
@@ -56,7 +161,7 @@ function ChatHeader({
 
             alert(
                 error.message ||
-                "Не вдалося видалити переписку."
+                "Не вдалося видалити чат."
             );
         }
     };
@@ -123,13 +228,113 @@ function ChatHeader({
 
 
     // ==========================================
-    // TOGGLE GROUP MEMBERS
+    // ADD GROUP MEMBER
+    // ==========================================
+
+    const handleAddMember = async (
+        selectedUser
+    ) => {
+        if (
+            !selectedUser ||
+            !onAddGroupMember ||
+            !isGroupCreator
+        ) {
+            return;
+        }
+
+        const selectedUserId =
+            Number(
+                selectedUser.id ??
+                selectedUser.Id ??
+                selectedUser.userId ??
+                selectedUser.UserId
+            );
+
+        const currentId =
+            Number(
+                currentUserId
+            );
+
+        if (
+            !selectedUserId ||
+            selectedUserId === currentId
+        ) {
+            return;
+        }
+
+        const alreadyMember =
+            safeMembers.some(
+                (member) =>
+                    Number(
+                        member.id ??
+                        member.userId ??
+                        member.UserId
+                    ) === selectedUserId
+            );
+
+        if (alreadyMember) {
+            alert(
+                "Цей користувач вже є учасником групи."
+            );
+
+            return;
+        }
+
+        try {
+            setAddingUserId(
+                selectedUserId
+            );
+
+            await onAddGroupMember(
+                selectedUserId
+            );
+
+            setSearch("");
+            setSearchResults([]);
+            setShowAddMember(false);
+        } catch (error) {
+            console.error(
+                "Failed to add group member:",
+                error
+            );
+
+            alert(
+                error.message ||
+                "Не вдалося додати учасника."
+            );
+        } finally {
+            setAddingUserId(null);
+        }
+    };
+
+
+    // ==========================================
+    // TOGGLE MEMBERS
     // ==========================================
 
     const handleToggleMembers = () => {
         setShowMembers(
             (value) => !value
         );
+
+        setShowAddMember(false);
+        setSearch("");
+        setSearchResults([]);
+    };
+
+
+    // ==========================================
+    // TOGGLE ADD MEMBER
+    // ==========================================
+
+    const handleToggleAddMember = () => {
+        setShowAddMember(
+            (value) => !value
+        );
+
+        setShowMembers(false);
+        setSearch("");
+        setSearchResults([]);
     };
 
 
@@ -233,7 +438,7 @@ function ChatHeader({
                     }}
                 >
                     {isGroup
-                        ? "Група"
+                        ? `Група • ${safeMembers.length} учасників`
                         : "Приватний чат"}
                 </div>
             </div>
@@ -250,10 +455,6 @@ function ChatHeader({
                 }}
             >
 
-                {/* =================================
-                    MENU BUTTON
-                ================================== */}
-
                 <button
                     type="button"
                     onClick={() => {
@@ -262,6 +463,9 @@ function ChatHeader({
                         );
 
                         setShowMembers(false);
+                        setShowAddMember(false);
+                        setSearch("");
+                        setSearchResults([]);
                     }}
                     aria-label="Меню чату"
                     title="Меню"
@@ -285,18 +489,14 @@ function ChatHeader({
                 </button>
 
 
-                {/* =================================
-                    DROPDOWN MENU
-                ================================== */}
-
                 {showMenu && (
                     <div
                         style={{
                             position: "absolute",
                             top: "46px",
                             right: "0",
-                            minWidth: isGroup
-                                ? "260px"
+                            width: isGroup
+                                ? "300px"
                                 : "220px",
                             maxWidth:
                                 "calc(100vw - 24px)",
@@ -312,11 +512,12 @@ function ChatHeader({
                     >
 
                         {/* =================================
-                            GROUP
+                            GROUP MENU
                         ================================== */}
 
                         {isGroup ? (
                             <>
+
                                 <button
                                     type="button"
                                     onClick={
@@ -360,6 +561,280 @@ function ChatHeader({
                                         {safeMembers.length}
                                     </span>
                                 </button>
+
+
+                                {/* =================================
+                                    ADD MEMBER
+                                ================================== */}
+
+                                {isGroupCreator && (
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            handleToggleAddMember
+                                        }
+                                        style={{
+                                            width: "100%",
+                                            border: "none",
+                                            borderTop:
+                                                "1px solid #eee",
+                                            background:
+                                                "transparent",
+                                            padding:
+                                                "12px 16px",
+                                            textAlign:
+                                                "left",
+                                            cursor:
+                                                "pointer",
+                                            color:
+                                                "#333",
+                                            fontSize:
+                                                "14px"
+                                        }}
+                                    >
+                                        ➕ Додати учасника
+                                    </button>
+                                )}
+
+
+                                {/* =================================
+                                    ADD MEMBER SEARCH
+                                ================================== */}
+
+                                {showAddMember && (
+                                    <div
+                                        style={{
+                                            borderTop:
+                                                "1px solid #eee",
+                                            padding:
+                                                "12px"
+                                        }}
+                                    >
+                                        <input
+                                            type="text"
+                                            value={
+                                                search
+                                            }
+                                            onChange={(event) =>
+                                                setSearch(
+                                                    event.target.value
+                                                )
+                                            }
+                                            placeholder="Пошук за nickname..."
+                                            autoFocus
+                                            style={{
+                                                width:
+                                                    "100%",
+                                                boxSizing:
+                                                    "border-box",
+                                                padding:
+                                                    "9px 10px",
+                                                border:
+                                                    "1px solid #ddd",
+                                                borderRadius:
+                                                    "8px",
+                                                outline:
+                                                    "none",
+                                                fontSize:
+                                                    "14px"
+                                            }}
+                                        />
+
+                                        <div
+                                            style={{
+                                                marginTop:
+                                                    "8px",
+                                                maxHeight:
+                                                    "220px",
+                                                overflowY:
+                                                    "auto"
+                                            }}
+                                        >
+                                            {searchLoading ? (
+                                                <div
+                                                    style={{
+                                                        padding:
+                                                            "10px",
+                                                        color:
+                                                            "#777",
+                                                        fontSize:
+                                                            "13px"
+                                                    }}
+                                                >
+                                                    Пошук...
+                                                </div>
+                                            ) : search.trim() &&
+                                                searchResults.length ===
+                                                    0 ? (
+                                                <div
+                                                    style={{
+                                                        padding:
+                                                            "10px",
+                                                        color:
+                                                            "#777",
+                                                        fontSize:
+                                                            "13px"
+                                                    }}
+                                                >
+                                                    Користувачів не знайдено
+                                                </div>
+                                            ) : (
+                                                searchResults.map(
+                                                    (
+                                                        result,
+                                                        index
+                                                    ) => {
+                                                        const resultId =
+                                                            Number(
+                                                                result.id ??
+                                                                result.Id ??
+                                                                result.userId ??
+                                                                result.UserId
+                                                            );
+
+                                                        const nickname =
+                                                            result.nickname ??
+                                                            result.Nickname ??
+                                                            "Користувач";
+
+                                                        const current =
+                                                            resultId ===
+                                                            Number(
+                                                                currentUserId
+                                                            );
+
+                                                        const alreadyMember =
+                                                            safeMembers.some(
+                                                                (
+                                                                    member
+                                                                ) =>
+                                                                    Number(
+                                                                        member.id ??
+                                                                        member.userId ??
+                                                                        member.UserId
+                                                                    ) ===
+                                                                    resultId
+                                                            );
+
+                                                        if (
+                                                            current ||
+                                                            alreadyMember
+                                                        ) {
+                                                            return null;
+                                                        }
+
+                                                        return (
+                                                            <button
+                                                                key={
+                                                                    resultId ||
+                                                                    index
+                                                                }
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleAddMember(
+                                                                        result
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    addingUserId ===
+                                                                    resultId
+                                                                }
+                                                                style={{
+                                                                    width:
+                                                                        "100%",
+                                                                    border:
+                                                                        "none",
+                                                                    background:
+                                                                        "transparent",
+                                                                    padding:
+                                                                        "9px 6px",
+                                                                    textAlign:
+                                                                        "left",
+                                                                    cursor:
+                                                                        addingUserId ===
+                                                                        resultId
+                                                                            ? "default"
+                                                                            : "pointer",
+                                                                    display:
+                                                                        "flex",
+                                                                    alignItems:
+                                                                        "center",
+                                                                    gap:
+                                                                        "10px",
+                                                                    borderRadius:
+                                                                        "7px",
+                                                                    opacity:
+                                                                        addingUserId ===
+                                                                        resultId
+                                                                            ? 0.6
+                                                                            : 1
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    style={{
+                                                                        width:
+                                                                            "32px",
+                                                                        height:
+                                                                            "32px",
+                                                                        minWidth:
+                                                                            "32px",
+                                                                        borderRadius:
+                                                                            "50%",
+                                                                        background:
+                                                                            "#e0e0e0",
+                                                                        display:
+                                                                            "flex",
+                                                                        alignItems:
+                                                                            "center",
+                                                                        justifyContent:
+                                                                            "center",
+                                                                        fontWeight:
+                                                                            "600"
+                                                                    }}
+                                                                >
+                                                                    {nickname
+                                                                        .charAt(
+                                                                            0
+                                                                        )
+                                                                        .toUpperCase()}
+                                                                </div>
+
+                                                                <span
+                                                                    style={{
+                                                                        overflow:
+                                                                            "hidden",
+                                                                        textOverflow:
+                                                                            "ellipsis",
+                                                                        whiteSpace:
+                                                                            "nowrap",
+                                                                        fontSize:
+                                                                            "14px"
+                                                                    }}
+                                                                >
+                                                                    {nickname}
+                                                                </span>
+
+                                                                <span
+                                                                    style={{
+                                                                        marginLeft:
+                                                                            "auto",
+                                                                        color:
+                                                                            "#777"
+                                                                    }}
+                                                                >
+                                                                    {addingUserId ===
+                                                                    resultId
+                                                                        ? "..."
+                                                                        : "➕"}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    }
+                                                )
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
 
                                 {/* =================================
@@ -419,22 +894,7 @@ function ChatHeader({
                                                     const isCreator =
                                                         memberId ===
                                                         Number(
-                                                            members.find(
-                                                                (
-                                                                    item
-                                                                ) =>
-                                                                    Boolean(
-                                                                        item.isCreator
-                                                                    )
-                                                            )?.id ??
-                                                            members.find(
-                                                                (
-                                                                    item
-                                                                ) =>
-                                                                    Boolean(
-                                                                        item.isCreator
-                                                                    )
-                                                            )?.userId
+                                                            creatorId
                                                         );
 
                                                     return (
@@ -460,9 +920,6 @@ function ChatHeader({
                                                                         : "none"
                                                             }}
                                                         >
-
-                                                            {/* AVATAR */}
-
                                                             <div
                                                                 style={{
                                                                     width:
@@ -494,8 +951,6 @@ function ChatHeader({
                                                                     .toUpperCase()}
                                                             </div>
 
-
-                                                            {/* NAME */}
 
                                                             <div
                                                                 style={{
@@ -539,8 +994,6 @@ function ChatHeader({
                                                             </div>
 
 
-                                                            {/* CREATOR BADGE */}
-
                                                             {isCreator && (
                                                                 <span
                                                                     style={{
@@ -556,8 +1009,6 @@ function ChatHeader({
                                                                 </span>
                                                             )}
 
-
-                                                            {/* REMOVE BUTTON */}
 
                                                             {isGroupCreator &&
                                                                 !isCurrentUser &&
@@ -595,8 +1046,41 @@ function ChatHeader({
                                                 }
                                             )
                                         )}
-
                                     </div>
+                                )}
+
+
+                                {/* =================================
+                                    DELETE GROUP
+                                ================================== */}
+
+                                {isGroupCreator && (
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            handleDeleteChat
+                                        }
+                                        style={{
+                                            width: "100%",
+                                            border: "none",
+                                            borderTop:
+                                                "1px solid #eee",
+                                            background:
+                                                "transparent",
+                                            padding:
+                                                "12px 16px",
+                                            textAlign:
+                                                "left",
+                                            cursor:
+                                                "pointer",
+                                            color:
+                                                "#d32f2f",
+                                            fontSize:
+                                                "14px"
+                                        }}
+                                    >
+                                        🗑️ Видалити групу
+                                    </button>
                                 )}
                             </>
                         ) : (
@@ -630,7 +1114,6 @@ function ChatHeader({
                                 🗑️ Видалити переписку
                             </button>
                         )}
-
                     </div>
                 )}
             </div>
@@ -658,5 +1141,6 @@ function ChatHeader({
         </header>
     );
 }
+
 
 export default ChatHeader;

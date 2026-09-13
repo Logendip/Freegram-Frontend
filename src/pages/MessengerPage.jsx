@@ -16,6 +16,7 @@ import {
     getGroupInvitations,
     acceptGroupInvitation,
     ignoreGroupInvitation,
+    addGroupMember,
     removeGroupMember
 } from "../services/api";
 
@@ -35,7 +36,9 @@ import MessageInput from "../components/chat/MessageInput";
 function MessengerPage() {
     const { user, token } = useAuth();
 
-    const [chats, setChats] = useState([]);
+
+    const [chats, setChats] =
+        useState([]);
 
     const [selectedChat, setSelectedChat] =
         useState(null);
@@ -52,12 +55,13 @@ function MessengerPage() {
     const [mobileChatOpen, setMobileChatOpen] =
         useState(false);
 
+
     const markedAsReadRef =
         useRef(new Set());
 
 
     // ==========================================
-    // SIGNALR CALLBACKS
+    // SIGNALR - RECEIVE MESSAGE
     // ==========================================
 
     const handleReceiveMessage =
@@ -100,10 +104,6 @@ function MessengerPage() {
                     );
 
 
-                // ==================================
-                // ADD MESSAGE TO CURRENT CHAT
-                // ==================================
-
                 if (isCurrentChat) {
                     setMessages(
                         (previousMessages) => {
@@ -133,7 +133,6 @@ function MessengerPage() {
                                 ...safeMessages,
                                 {
                                     ...message,
-
                                     isRead:
                                         Boolean(
                                             message.isRead
@@ -145,16 +144,13 @@ function MessengerPage() {
                 }
 
 
-                // ==================================
-                // UPDATE UNREAD COUNT
-                // ==================================
-
                 if (
                     isOwnMessage ||
                     isCurrentChat
                 ) {
                     return;
                 }
+
 
                 setChats(
                     (previousChats) => {
@@ -197,6 +193,10 @@ function MessengerPage() {
             ]
         );
 
+
+    // ==========================================
+    // MESSAGE READ
+    // ==========================================
 
     const handleMessageRead =
         useCallback(
@@ -252,6 +252,10 @@ function MessengerPage() {
         );
 
 
+    // ==========================================
+    // MESSAGE DELETED FOR EVERYONE
+    // ==========================================
+
     const handleMessageDeletedForEveryone =
         useCallback(
             (data) => {
@@ -283,6 +287,10 @@ function MessengerPage() {
             []
         );
 
+
+    // ==========================================
+    // MESSAGE DELETED FOR ME
+    // ==========================================
 
     const handleMessageDeletedForMe =
         useCallback(
@@ -316,15 +324,24 @@ function MessengerPage() {
         );
 
 
+    // ==========================================
+    // CHAT / GROUP DELETED
+    // ==========================================
+
     const handleChatDeleted =
         useCallback(
-            (chatId) => {
+            (data) => {
                 const deletedChatId =
                     Number(
-                        chatId?.chatId ??
-                        chatId?.ChatId ??
-                        chatId
+                        data?.chatId ??
+                        data?.ChatId ??
+                        data
                     );
+
+                if (!deletedChatId) {
+                    return;
+                }
+
 
                 setChats(
                     (previousChats) => {
@@ -345,6 +362,23 @@ function MessengerPage() {
                     }
                 );
 
+
+                setSelectedChat(
+                    (previousChat) => {
+                        if (
+                            Number(
+                                previousChat?.id
+                            ) !==
+                            deletedChatId
+                        ) {
+                            return previousChat;
+                        }
+
+                        return null;
+                    }
+                );
+
+
                 setSelectedChat(
                     (previousChat) => {
                         if (
@@ -353,22 +387,24 @@ function MessengerPage() {
                             ) ===
                             deletedChatId
                         ) {
+                            setMessages([]);
+                            setMobileChatOpen(false);
+                            markedAsReadRef.current.clear();
+
                             return null;
                         }
 
                         return previousChat;
                     }
                 );
-
-                setMessages([]);
-
-                markedAsReadRef.current.clear();
-
-                setMobileChatOpen(false);
             },
             []
         );
 
+
+    // ==========================================
+    // PRIVATE CHAT REQUEST CREATED
+    // ==========================================
 
     const handleChatRequestCreated =
         useCallback(
@@ -523,17 +559,275 @@ function MessengerPage() {
 
     const handleGroupInvitationAccepted =
         useCallback(
+            () => {
+                // Existing group creator
+                // receives GroupMemberAdded
+                // when a member joins.
+            },
+            []
+        );
+
+
+    // ==========================================
+    // GROUP MEMBER ADDED
+    // ==========================================
+
+    const handleGroupMemberAdded =
+        useCallback(
             (data) => {
                 if (!data) {
                     return;
                 }
 
-                // Creator does not need
-                // to modify the chat here.
-                // The member count can be
-                // refreshed later if needed.
+                const chatData =
+                    data.chat ??
+                    data.Chat;
+
+                const chatId =
+                    Number(
+                        data.chatId ??
+                        data.ChatId ??
+                        chatData?.id ??
+                        chatData?.Id
+                    );
+
+                const addedUser =
+                    data.user ??
+                    data.User;
+
+                const addedUserId =
+                    Number(
+                        addedUser?.id ??
+                        addedUser?.Id ??
+                        addedUser?.userId ??
+                        addedUser?.UserId
+                    );
+
+                const currentUserId =
+                    Number(
+                        user?.id
+                    );
+
+                if (
+                    !chatId ||
+                    !addedUserId
+                ) {
+                    return;
+                }
+
+
+                // ==================================
+                // CURRENT USER WAS ADDED
+                // ==================================
+
+                if (
+                    addedUserId ===
+                    currentUserId &&
+                    chatData
+                ) {
+                    const normalizedMembers =
+                        Array.isArray(
+                            chatData.members ??
+                            chatData.Members
+                        )
+                            ? [
+                                ...(chatData.members ??
+                                    chatData.Members)
+                            ]
+                            : [];
+
+                    const normalizedChat = {
+                        ...chatData,
+
+                        id:
+                            Number(
+                                chatData.id ??
+                                chatData.Id
+                            ),
+
+                        name:
+                            chatData.name ??
+                            chatData.Name ??
+                            "Група",
+
+                        isGroup:
+                            true,
+
+                        creatorId:
+                            Number(
+                                chatData.creatorId ??
+                                chatData.CreatorId
+                            ),
+
+                        members:
+                            normalizedMembers,
+
+                        unreadCount:
+                            0
+                    };
+
+
+                    setChats(
+                        (previousChats) => {
+                            const safeChats =
+                                Array.isArray(
+                                    previousChats
+                                )
+                                    ? previousChats
+                                    : [];
+
+                            const exists =
+                                safeChats.some(
+                                    (chat) =>
+                                        Number(
+                                            chat.id
+                                        ) ===
+                                        chatId
+                                );
+
+                            if (exists) {
+                                return safeChats.map(
+                                    (chat) =>
+                                        Number(
+                                            chat.id
+                                        ) ===
+                                        chatId
+                                            ? {
+                                                ...chat,
+                                                ...normalizedChat
+                                            }
+                                            : chat
+                                );
+                            }
+
+                            return [
+                                ...safeChats,
+                                normalizedChat
+                            ];
+                        }
+                    );
+
+                    return;
+                }
+
+
+                // ==================================
+                // ANOTHER USER WAS ADDED
+                // ==================================
+
+                const normalizedUser = {
+                    id:
+                        addedUserId,
+
+                    nickname:
+                        addedUser?.nickname ??
+                        addedUser?.Nickname ??
+                        "Користувач"
+                };
+
+
+                setChats(
+                    (previousChats) => {
+                        const safeChats =
+                            Array.isArray(
+                                previousChats
+                            )
+                                ? previousChats
+                                : [];
+
+                        return safeChats.map(
+                            (chat) => {
+                                if (
+                                    Number(
+                                        chat.id
+                                    ) !==
+                                    chatId
+                                ) {
+                                    return chat;
+                                }
+
+                                const currentMembers =
+                                    Array.isArray(
+                                        chat.members
+                                    )
+                                        ? chat.members
+                                        : [];
+
+                                const exists =
+                                    currentMembers.some(
+                                        (member) =>
+                                            Number(
+                                                member.id ??
+                                                member.userId ??
+                                                member.UserId
+                                            ) ===
+                                            addedUserId
+                                    );
+
+                                if (exists) {
+                                    return chat;
+                                }
+
+                                return {
+                                    ...chat,
+
+                                    members: [
+                                        ...currentMembers,
+                                        normalizedUser
+                                    ]
+                                };
+                            }
+                        );
+                    }
+                );
+
+
+                setSelectedChat(
+                    (previousChat) => {
+                        if (
+                            !previousChat ||
+                            Number(
+                                previousChat.id
+                            ) !==
+                            chatId
+                        ) {
+                            return previousChat;
+                        }
+
+                        const currentMembers =
+                            Array.isArray(
+                                previousChat.members
+                            )
+                                ? previousChat.members
+                                : [];
+
+                        const exists =
+                            currentMembers.some(
+                                (member) =>
+                                    Number(
+                                        member.id ??
+                                        member.userId ??
+                                        member.UserId
+                                    ) ===
+                                    addedUserId
+                            );
+
+                        if (exists) {
+                            return previousChat;
+                        }
+
+                        return {
+                            ...previousChat,
+
+                            members: [
+                                ...currentMembers,
+                                normalizedUser
+                            ]
+                        };
+                    }
+                );
             },
-            []
+            [user]
         );
 
 
@@ -573,10 +867,6 @@ function MessengerPage() {
                 }
 
 
-                // ==================================
-                // CURRENT USER WAS REMOVED
-                // ==================================
-
                 if (
                     removedUserId ===
                     currentUserId
@@ -608,6 +898,10 @@ function MessengerPage() {
                                 ) ===
                                 chatId
                             ) {
+                                setMessages([]);
+                                setMobileChatOpen(false);
+                                markedAsReadRef.current.clear();
+
                                 return null;
                             }
 
@@ -615,19 +909,9 @@ function MessengerPage() {
                         }
                     );
 
-                    setMessages([]);
-
-                    markedAsReadRef.current.clear();
-
-                    setMobileChatOpen(false);
-
                     return;
                 }
 
-
-                // ==================================
-                // ANOTHER MEMBER WAS REMOVED
-                // ==================================
 
                 setChats(
                     (previousChats) => {
@@ -759,6 +1043,9 @@ function MessengerPage() {
         onGroupInvitationAccepted:
             handleGroupInvitationAccepted,
 
+        onGroupMemberAdded:
+            handleGroupMemberAdded,
+
         onGroupMemberRemoved:
             handleGroupMemberRemoved
     });
@@ -782,6 +1069,7 @@ function MessengerPage() {
             Number(
                 selectedChat.id
             );
+
 
         setChats(
             (previousChats) => {
@@ -1065,6 +1353,7 @@ function MessengerPage() {
                         unreadCount: 0
                     };
 
+
                     setChats(
                         (previousChats) => {
                             const safeChats =
@@ -1111,6 +1400,7 @@ function MessengerPage() {
                         }
                     );
 
+
                     setSelectedChat(
                         normalizedChat
                     );
@@ -1119,7 +1409,9 @@ function MessengerPage() {
 
                     setMobileChatOpen(true);
 
-                    await joinChat(chat.id);
+                    await joinChat(
+                        chat.id
+                    );
 
                     const data =
                         await getMessages(
@@ -1132,7 +1424,6 @@ function MessengerPage() {
                             ? data.map(
                                 (message) => ({
                                     ...message,
-
                                     isRead:
                                         Boolean(
                                             message.isRead
@@ -1160,7 +1451,7 @@ function MessengerPage() {
 
 
     // ==========================================
-    // GROUP CREATED FROM SIDEBAR
+    // GROUP CREATED
     // ==========================================
 
     const handleGroupCreated =
@@ -1207,6 +1498,12 @@ function MessengerPage() {
 
                     isGroup:
                         true,
+
+                    creatorId:
+                        Number(
+                            createdChat.creatorId ??
+                            createdChat.CreatorId
+                        ),
 
                     members,
 
@@ -1288,6 +1585,7 @@ function MessengerPage() {
                             invitation.invitationId
                         );
 
+
                     setGroupInvitations(
                         (previousInvitations) => {
                             const safeInvitations =
@@ -1309,6 +1607,7 @@ function MessengerPage() {
                         }
                     );
 
+
                     let acceptedChat =
                         result?.chat;
 
@@ -1318,6 +1617,7 @@ function MessengerPage() {
                         );
                     }
 
+
                     const members =
                         Array.isArray(
                             acceptedChat.members
@@ -1326,6 +1626,7 @@ function MessengerPage() {
                                 ...acceptedChat.members
                             ]
                             : [];
+
 
                     const hasCurrentUser =
                         members.some(
@@ -1340,6 +1641,7 @@ function MessengerPage() {
                                 )
                         );
 
+
                     if (
                         !hasCurrentUser &&
                         user
@@ -1352,6 +1654,7 @@ function MessengerPage() {
                                 user.nickname
                         });
                     }
+
 
                     acceptedChat = {
                         ...acceptedChat,
@@ -1371,11 +1674,18 @@ function MessengerPage() {
                         isGroup:
                             true,
 
+                        creatorId:
+                            Number(
+                                acceptedChat.creatorId ??
+                                acceptedChat.CreatorId
+                            ),
+
                         members,
 
                         unreadCount:
                             0
                     };
+
 
                     setChats(
                         (previousChats) => {
@@ -1422,6 +1732,7 @@ function MessengerPage() {
                             ];
                         }
                     );
+
 
                     await openChat(
                         acceptedChat
@@ -1503,6 +1814,74 @@ function MessengerPage() {
 
 
     // ==========================================
+    // ADD GROUP MEMBER
+    // ==========================================
+
+    const handleAddGroupMember =
+        useCallback(
+            async (userId) => {
+                if (
+                    !token ||
+                    !selectedChat ||
+                    !selectedChat.isGroup
+                ) {
+                    return;
+                }
+
+                const currentUserId =
+                    Number(
+                        user?.id
+                    );
+
+                const targetUserId =
+                    Number(
+                        userId
+                    );
+
+                if (
+                    !targetUserId ||
+                    targetUserId ===
+                        currentUserId
+                ) {
+                    return;
+                }
+
+                const isCreator =
+                    Number(
+                        selectedChat.creatorId
+                    ) ===
+                    currentUserId;
+
+                if (!isCreator) {
+                    throw new Error(
+                        "Тільки Creator може додавати учасників."
+                    );
+                }
+
+                try {
+                    await addGroupMember(
+                        token,
+                        selectedChat.id,
+                        targetUserId
+                    );
+                } catch (error) {
+                    console.error(
+                        "Failed to add group member:",
+                        error
+                    );
+
+                    throw error;
+                }
+            },
+            [
+                token,
+                selectedChat,
+                user
+            ]
+        );
+
+
+    // ==========================================
     // REMOVE GROUP MEMBER
     // ==========================================
 
@@ -1557,10 +1936,7 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося видалити учасника з групи."
-                    );
+                    throw error;
                 }
             },
             [
@@ -1634,6 +2010,7 @@ function MessengerPage() {
                         );
                     }
 
+
                     const existingMembers =
                         Array.isArray(
                             chat.members
@@ -1644,6 +2021,7 @@ function MessengerPage() {
                     const members = [
                         ...existingMembers
                     ];
+
 
                     const hasSelectedUser =
                         members.some(
@@ -1657,6 +2035,7 @@ function MessengerPage() {
                                 )
                         );
 
+
                     if (
                         !hasSelectedUser
                     ) {
@@ -1669,6 +2048,7 @@ function MessengerPage() {
                         });
                     }
 
+
                     const hasCurrentUser =
                         members.some(
                             (member) =>
@@ -1680,6 +2060,7 @@ function MessengerPage() {
                                     user?.id
                                 )
                         );
+
 
                     if (
                         !hasCurrentUser &&
@@ -1694,6 +2075,7 @@ function MessengerPage() {
                         });
                     }
 
+
                     chat = {
                         ...chat,
 
@@ -1702,6 +2084,7 @@ function MessengerPage() {
                         unreadCount:
                             0
                     };
+
 
                     setChats(
                         (previousChats) => {
@@ -1750,7 +2133,10 @@ function MessengerPage() {
                         }
                     );
 
-                    await openChat(chat);
+
+                    await openChat(
+                        chat
+                    );
                 } catch (error) {
                     console.error(
                         "Failed to open private chat:",
@@ -1801,7 +2187,8 @@ function MessengerPage() {
                         (member) =>
                             Number(
                                 member.id ??
-                                member.userId
+                                member.userId ??
+                                member.UserId
                             ) !==
                             Number(
                                 user?.id
@@ -1809,8 +2196,9 @@ function MessengerPage() {
                     );
 
                 return (
-                    otherMember?.nickname ||
-                    chat.name ||
+                    otherMember?.nickname ??
+                    otherMember?.Nickname ??
+                    chat.name ??
                     "Приватний чат"
                 );
             },
@@ -1933,7 +2321,7 @@ function MessengerPage() {
 
 
     // ==========================================
-    // DELETE CHAT
+    // DELETE CHAT / GROUP
     // ==========================================
 
     const handleDeleteChat =
@@ -1946,20 +2334,35 @@ function MessengerPage() {
                     return;
                 }
 
-                if (selectedChat.isGroup) {
-                    return;
-                }
-
                 const chatId =
                     selectedChat.id;
 
+
+                if (
+                    selectedChat.isGroup &&
+                    Number(
+                        selectedChat.creatorId
+                    ) !==
+                        Number(
+                            user?.id
+                        )
+                ) {
+                    throw new Error(
+                        "Тільки Creator може видалити групу."
+                    );
+                }
+
+
                 try {
-                    await leaveChat(chatId);
+                    await leaveChat(
+                        chatId
+                    );
 
                     await deleteChat(
                         token,
                         chatId
                     );
+
 
                     setChats(
                         (previousChats) => {
@@ -1982,6 +2385,7 @@ function MessengerPage() {
                         }
                     );
 
+
                     setSelectedChat(null);
                     setMessages([]);
                     setMobileChatOpen(false);
@@ -1999,6 +2403,7 @@ function MessengerPage() {
             [
                 selectedChat,
                 token,
+                user,
                 leaveChat
             ]
         );
@@ -2022,6 +2427,7 @@ function MessengerPage() {
                             request.requestId
                         );
 
+
                     setChatRequests(
                         (previousRequests) => {
                             const safeRequests =
@@ -2043,6 +2449,7 @@ function MessengerPage() {
                         }
                     );
 
+
                     let acceptedChat =
                         result?.chat;
 
@@ -2051,6 +2458,7 @@ function MessengerPage() {
                             "Чат не був отриманий після прийняття запиту."
                         );
                     }
+
 
                     const acceptedMembers =
                         Array.isArray(
@@ -2061,17 +2469,20 @@ function MessengerPage() {
                             ]
                             : [];
 
+
                     const hasCurrentUser =
                         acceptedMembers.some(
                             (member) =>
                                 Number(
                                     member.id ??
-                                    member.userId
+                                    member.userId ??
+                                    member.UserId
                                 ) ===
                                 Number(
                                     user?.id
                                 )
                         );
+
 
                     if (
                         !hasCurrentUser &&
@@ -2086,6 +2497,7 @@ function MessengerPage() {
                         });
                     }
 
+
                     const requestSender =
                         request.sender;
 
@@ -2094,12 +2506,14 @@ function MessengerPage() {
                             (member) =>
                                 Number(
                                     member.id ??
-                                    member.userId
+                                    member.userId ??
+                                    member.UserId
                                 ) ===
                                 Number(
                                     requestSender?.id
                                 )
                         );
+
 
                     if (
                         !hasSender &&
@@ -2114,6 +2528,7 @@ function MessengerPage() {
                         });
                     }
 
+
                     acceptedChat = {
                         ...acceptedChat,
 
@@ -2123,6 +2538,7 @@ function MessengerPage() {
                         unreadCount:
                             0
                     };
+
 
                     setChats(
                         (previousChats) => {
@@ -2144,6 +2560,7 @@ function MessengerPage() {
                                         )
                                 );
 
+
                             if (exists) {
                                 return safeChats.map(
                                     (chat) =>
@@ -2163,12 +2580,14 @@ function MessengerPage() {
                                 );
                             }
 
+
                             return [
                                 ...safeChats,
                                 acceptedChat
                             ];
                         }
                     );
+
 
                     await openChat(
                         acceptedChat
@@ -2210,6 +2629,7 @@ function MessengerPage() {
                         request.requestId
                     );
 
+
                     setChatRequests(
                         (previousRequests) => {
                             const safeRequests =
@@ -2247,7 +2667,7 @@ function MessengerPage() {
 
 
     // ==========================================
-    // SAFE VALUES FOR RENDER
+    // SAFE VALUES
     // ==========================================
 
     const safeChats =
@@ -2280,6 +2700,7 @@ function MessengerPage() {
             mobileChatOpen={
                 mobileChatOpen
             }
+
             sidebar={
                 <ChatSidebar
                     chats={safeChats}
@@ -2613,6 +3034,10 @@ function MessengerPage() {
                             user?.id
                         }
 
+                        creatorId={
+                            selectedChat.creatorId
+                        }
+
                         isGroupCreator={
                             Boolean(
                                 selectedChat.isGroup &&
@@ -2623,6 +3048,14 @@ function MessengerPage() {
                                         user?.id
                                     )
                             )
+                        }
+
+                        token={
+                            token
+                        }
+
+                        onAddGroupMember={
+                            handleAddGroupMember
                         }
 
                         onRemoveGroupMember={
@@ -2638,20 +3071,25 @@ function MessengerPage() {
                         }
                     />
 
+
                     <MessageList
                         messages={
                             safeMessages
                         }
+
                         currentUserId={
                             user?.id
                         }
+
                         onDeleteForEveryone={
                             handleDeleteForEveryone
                         }
+
                         onDeleteForMe={
                             handleDeleteForMe
                         }
                     />
+
 
                     <MessageInput
                         onSend={
@@ -2668,10 +3106,12 @@ function MessengerPage() {
                             "center",
                         justifyContent:
                             "center",
-                        color: "#777",
+                        color:
+                            "#777",
                         background:
                             "#fafafa",
-                        fontSize: "16px"
+                        fontSize:
+                            "16px"
                     }}
                 >
                     Виберіть чат
@@ -2681,5 +3121,6 @@ function MessengerPage() {
         </MessengerLayout>
     );
 }
+
 
 export default MessengerPage;
