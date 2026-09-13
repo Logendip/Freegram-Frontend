@@ -48,10 +48,6 @@ function MessengerPage() {
     /*
      * Зберігаємо ID повідомлень, які вже
      * відправлялися на MarkMessageAsRead.
-     *
-     * Це не дає React effect постійно
-     * викликати backend для одного
-     * й того самого повідомлення.
      */
     const markedAsReadRef =
         useRef(new Set());
@@ -62,47 +58,148 @@ function MessengerPage() {
     // ==========================================
 
     const handleReceiveMessage =
-        useCallback((message) => {
-            if (!message) {
-                return;
-            }
-
-            setMessages(
-                (previousMessages) => {
-                    const safeMessages =
-                        Array.isArray(previousMessages)
-                            ? previousMessages
-                            : [];
-
-                    const exists =
-                        safeMessages.some(
-                            (item) =>
-                                item.id ===
-                                message.id
-                        );
-
-                    if (exists) {
-                        return safeMessages;
-                    }
-
-                    return [
-                        ...safeMessages,
-                        {
-                            ...message,
-
-                            /*
-                             * Нове повідомлення
-                             * ще не вважаємо прочитаним.
-                             */
-                            isRead:
-                                Boolean(
-                                    message.isRead
-                                )
-                        }
-                    ];
+        useCallback(
+            (message) => {
+                if (!message) {
+                    return;
                 }
-            );
-        }, []);
+
+                const messageChatId =
+                    Number(
+                        message.chatId
+                    );
+
+                const currentChatId =
+                    Number(
+                        selectedChat?.id
+                    );
+
+                const messageSenderId =
+                    Number(
+                        message.sender?.id ??
+                        message.senderId
+                    );
+
+                const currentUserId =
+                    Number(
+                        user?.id
+                    );
+
+                const isOwnMessage =
+                    messageSenderId ===
+                    currentUserId;
+
+                const isCurrentChat =
+                    messageChatId ===
+                        currentChatId &&
+                    Boolean(
+                        selectedChat
+                    );
+
+
+                // ==================================
+                // ADD MESSAGE TO CURRENT CHAT
+                // ==================================
+
+                if (isCurrentChat) {
+                    setMessages(
+                        (previousMessages) => {
+                            const safeMessages =
+                                Array.isArray(
+                                    previousMessages
+                                )
+                                    ? previousMessages
+                                    : [];
+
+                            const exists =
+                                safeMessages.some(
+                                    (item) =>
+                                        Number(
+                                            item.id
+                                        ) ===
+                                        Number(
+                                            message.id
+                                        )
+                                );
+
+                            if (exists) {
+                                return safeMessages;
+                            }
+
+                            return [
+                                ...safeMessages,
+                                {
+                                    ...message,
+                                    isRead:
+                                        isOwnMessage ||
+                                        Boolean(
+                                            message.isRead
+                                        )
+                                }
+                            ];
+                        }
+                    );
+                }
+
+
+                // ==================================
+                // UPDATE UNREAD COUNT
+                // ==================================
+
+                /*
+                 * Не збільшуємо unreadCount:
+                 *
+                 * 1. для власного повідомлення;
+                 * 2. якщо повідомлення прийшло
+                 *    у вже відкритий чат.
+                 */
+                if (
+                    isOwnMessage ||
+                    isCurrentChat
+                ) {
+                    return;
+                }
+
+                setChats(
+                    (previousChats) => {
+                        const safeChats =
+                            Array.isArray(
+                                previousChats
+                            )
+                                ? previousChats
+                                : [];
+
+                        return safeChats.map(
+                            (chat) => {
+                                if (
+                                    Number(
+                                        chat.id
+                                    ) !==
+                                    messageChatId
+                                ) {
+                                    return chat;
+                                }
+
+                                return {
+                                    ...chat,
+
+                                    unreadCount:
+                                        (
+                                            Number(
+                                                chat.unreadCount
+                                            ) || 0
+                                        ) + 1
+                                };
+                            }
+                        );
+                    }
+                );
+            },
+            [
+                selectedChat,
+                user
+            ]
+        );
 
 
     /*
@@ -111,175 +208,214 @@ function MessengerPage() {
      * прочитав його повідомлення.
      */
     const handleMessageRead =
-        useCallback((data) => {
-            if (!data) {
-                return;
-            }
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
+                }
 
-            setMessages(
-                (previousMessages) => {
-                    const safeMessages =
-                        Array.isArray(
-                            previousMessages
-                        )
-                            ? previousMessages
-                            : [];
-
-                    /*
-                     * Не оновлюємо повідомлення
-                     * з іншого чату.
-                     */
-                    if (
-                        selectedChat &&
-                        Number(data.chatId) !==
-                            Number(
-                                selectedChat.id
+                setMessages(
+                    (previousMessages) => {
+                        const safeMessages =
+                            Array.isArray(
+                                previousMessages
                             )
-                    ) {
-                        return safeMessages;
-                    }
+                                ? previousMessages
+                                : [];
 
-                    return safeMessages.map(
-                        (message) => {
-                            if (
+                        /*
+                         * Не оновлюємо повідомлення
+                         * з іншого чату.
+                         */
+                        if (
+                            selectedChat &&
+                            Number(
+                                data.chatId
+                            ) !==
+                                Number(
+                                    selectedChat.id
+                                )
+                        ) {
+                            return safeMessages;
+                        }
+
+                        return safeMessages.map(
+                            (message) => {
+                                if (
+                                    Number(
+                                        message.id
+                                    ) !==
+                                    Number(
+                                        data.messageId
+                                    )
+                                ) {
+                                    return message;
+                                }
+
+                                return {
+                                    ...message,
+                                    isRead: true
+                                };
+                            }
+                        );
+                    }
+                );
+            },
+            [selectedChat]
+        );
+
+
+    const handleMessageDeletedForEveryone =
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
+                }
+
+                setMessages(
+                    (previousMessages) => {
+                        const safeMessages =
+                            Array.isArray(
+                                previousMessages
+                            )
+                                ? previousMessages
+                                : [];
+
+                        return safeMessages.filter(
+                            (message) =>
                                 Number(
                                     message.id
                                 ) !==
                                 Number(
                                     data.messageId
                                 )
-                            ) {
-                                return message;
-                            }
-
-                            return {
-                                ...message,
-                                isRead: true
-                            };
-                        }
-                    );
-                }
-            );
-        }, [selectedChat]);
-
-
-    const handleMessageDeletedForEveryone =
-        useCallback((data) => {
-            if (!data) {
-                return;
-            }
-
-            setMessages(
-                (previousMessages) => {
-                    const safeMessages =
-                        Array.isArray(previousMessages)
-                            ? previousMessages
-                            : [];
-
-                    return safeMessages.filter(
-                        (message) =>
-                            message.id !==
-                            data.messageId
-                    );
-                }
-            );
-        }, []);
+                        );
+                    }
+                );
+            },
+            []
+        );
 
 
     const handleMessageDeletedForMe =
-        useCallback((data) => {
-            if (!data) {
-                return;
-            }
-
-            setMessages(
-                (previousMessages) => {
-                    const safeMessages =
-                        Array.isArray(previousMessages)
-                            ? previousMessages
-                            : [];
-
-                    return safeMessages.filter(
-                        (message) =>
-                            message.id !==
-                            data.messageId
-                    );
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
                 }
-            );
-        }, []);
+
+                setMessages(
+                    (previousMessages) => {
+                        const safeMessages =
+                            Array.isArray(
+                                previousMessages
+                            )
+                                ? previousMessages
+                                : [];
+
+                        return safeMessages.filter(
+                            (message) =>
+                                Number(
+                                    message.id
+                                ) !==
+                                Number(
+                                    data.messageId
+                                )
+                        );
+                    }
+                );
+            },
+            []
+        );
 
 
     const handleChatDeleted =
-        useCallback((chatId) => {
-            setChats(
-                (previousChats) => {
-                    const safeChats =
-                        Array.isArray(previousChats)
-                            ? previousChats
-                            : [];
+        useCallback(
+            (chatId) => {
+                setChats(
+                    (previousChats) => {
+                        const safeChats =
+                            Array.isArray(
+                                previousChats
+                            )
+                                ? previousChats
+                                : [];
 
-                    return safeChats.filter(
-                        (chat) =>
-                            chat.id !==
-                            chatId
-                    );
-                }
-            );
-
-            setSelectedChat(
-                (previousChat) => {
-                    if (
-                        previousChat?.id ===
-                        chatId
-                    ) {
-                        return null;
+                        return safeChats.filter(
+                            (chat) =>
+                                Number(
+                                    chat.id
+                                ) !==
+                                Number(
+                                    chatId
+                                )
+                        );
                     }
+                );
 
-                    return previousChat;
-                }
-            );
+                setSelectedChat(
+                    (previousChat) => {
+                        if (
+                            Number(
+                                previousChat?.id
+                            ) ===
+                            Number(
+                                chatId
+                            )
+                        ) {
+                            return null;
+                        }
 
-            setMessages([]);
+                        return previousChat;
+                    }
+                );
 
-            markedAsReadRef.current.clear();
+                setMessages([]);
 
-            setMobileChatOpen(false);
-        }, []);
+                markedAsReadRef.current.clear();
+
+                setMobileChatOpen(false);
+            },
+            []
+        );
 
 
     const handleChatRequestCreated =
-        useCallback((data) => {
-            if (!data) {
-                return;
-            }
-
-            setChatRequests(
-                (previousRequests) => {
-                    const safeRequests =
-                        Array.isArray(
-                            previousRequests
-                        )
-                            ? previousRequests
-                            : [];
-
-                    const exists =
-                        safeRequests.some(
-                            (request) =>
-                                request.requestId ===
-                                data.requestId
-                        );
-
-                    if (exists) {
-                        return safeRequests;
-                    }
-
-                    return [
-                        ...safeRequests,
-                        data
-                    ];
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
                 }
-            );
-        }, []);
+
+                setChatRequests(
+                    (previousRequests) => {
+                        const safeRequests =
+                            Array.isArray(
+                                previousRequests
+                            )
+                                ? previousRequests
+                                : [];
+
+                        const exists =
+                            safeRequests.some(
+                                (request) =>
+                                    request.requestId ===
+                                    data.requestId
+                            );
+
+                        if (exists) {
+                            return safeRequests;
+                        }
+
+                        return [
+                            ...safeRequests,
+                            data
+                        ];
+                    }
+                );
+            },
+            []
+        );
 
 
     // ==========================================
@@ -333,6 +469,44 @@ function MessengerPage() {
             return;
         }
 
+        const chatId =
+            Number(
+                selectedChat.id
+            );
+
+        /*
+         * Як тільки відкрили чат,
+         * локально прибираємо unread badge.
+         */
+        setChats(
+            (previousChats) => {
+                const safeChats =
+                    Array.isArray(
+                        previousChats
+                    )
+                        ? previousChats
+                        : [];
+
+                return safeChats.map(
+                    (chat) => {
+                        if (
+                            Number(
+                                chat.id
+                            ) !== chatId
+                        ) {
+                            return chat;
+                        }
+
+                        return {
+                            ...chat,
+                            unreadCount: 0
+                        };
+                    }
+                );
+            }
+        );
+
+
         const markUnreadMessages =
             async () => {
                 for (
@@ -345,7 +519,8 @@ function MessengerPage() {
                      */
                     if (
                         Number(
-                            message.sender?.id
+                            message.sender?.id ??
+                            message.senderId
                         ) ===
                         Number(user.id)
                     ) {
@@ -354,8 +529,7 @@ function MessengerPage() {
 
                     /*
                      * Якщо повідомлення вже
-                     * позначене прочитаним —
-                     * нічого не робимо.
+                     * прочитане — нічого не робимо.
                      */
                     if (message.isRead) {
                         continue;
@@ -380,15 +554,10 @@ function MessengerPage() {
 
                     try {
                         await markMessageAsRead(
-                            selectedChat.id,
+                            chatId,
                             message.id
                         );
                     } catch (error) {
-                        /*
-                         * Якщо виклик не вдався,
-                         * дозволяємо повторити
-                         * його пізніше.
-                         */
                         markedAsReadRef.current.delete(
                             message.id
                         );
@@ -504,13 +673,18 @@ function MessengerPage() {
                 try {
                     if (
                         selectedChat &&
-                        selectedChat.id !==
-                            chat.id
+                        Number(
+                            selectedChat.id
+                        ) !==
+                            Number(
+                                chat.id
+                            )
                     ) {
                         await leaveChat(
                             selectedChat.id
                         );
                     }
+
 
                     /*
                      * Новий чат — новий набір
@@ -519,7 +693,67 @@ function MessengerPage() {
                      */
                     markedAsReadRef.current.clear();
 
-                    setSelectedChat(chat);
+
+                    // ==================================
+                    // CLEAR UNREAD BADGE IMMEDIATELY
+                    // ==================================
+
+                    const normalizedChat = {
+                        ...chat,
+                        unreadCount: 0
+                    };
+
+                    setChats(
+                        (previousChats) => {
+                            const safeChats =
+                                Array.isArray(
+                                    previousChats
+                                )
+                                    ? previousChats
+                                    : [];
+
+                            const exists =
+                                safeChats.some(
+                                    (item) =>
+                                        Number(
+                                            item.id
+                                        ) ===
+                                        Number(
+                                            chat.id
+                                        )
+                                );
+
+                            if (!exists) {
+                                return [
+                                    ...safeChats,
+                                    normalizedChat
+                                ];
+                            }
+
+                            return safeChats.map(
+                                (item) =>
+                                    Number(
+                                        item.id
+                                    ) ===
+                                    Number(
+                                        chat.id
+                                    )
+                                        ? {
+                                            ...item,
+                                            ...chat,
+                                            unreadCount:
+                                                0
+                                        }
+                                        : item
+                            );
+                        }
+                    );
+
+
+                    setSelectedChat(
+                        normalizedChat
+                    );
+
                     setMessages([]);
 
                     setMobileChatOpen(true);
@@ -628,42 +862,89 @@ function MessengerPage() {
 
 
                     // ==================================
-                    // ADD SELECTED USER TO MEMBERS
+                    // NORMALIZE PRIVATE CHAT MEMBERS
                     // ==================================
 
-                    const hasSelectedUser =
+                    const existingMembers =
                         Array.isArray(
                             chat.members
-                        ) &&
-                        chat.members.some(
+                        )
+                            ? chat.members
+                            : [];
+
+                    const members = [
+                        ...existingMembers
+                    ];
+
+
+                    /*
+                     * Додаємо вибраного користувача,
+                     * якщо його немає.
+                     */
+                    const hasSelectedUser =
+                        members.some(
                             (member) =>
-                                Number(member.id) ===
+                                Number(
+                                    member.id
+                                ) ===
                                 Number(
                                     selectedUser.id
                                 )
                         );
 
-                    if (!hasSelectedUser) {
-                        chat = {
-                            ...chat,
+                    if (
+                        !hasSelectedUser
+                    ) {
+                        members.push({
+                            id:
+                                selectedUser.id,
 
-                            members: [
-                                ...(Array.isArray(
-                                    chat.members
-                                )
-                                    ? chat.members
-                                    : []),
-
-                                {
-                                    id:
-                                        selectedUser.id,
-
-                                    nickname:
-                                        selectedUser.nickname
-                                }
-                            ]
-                        };
+                            nickname:
+                                selectedUser.nickname
+                        });
                     }
+
+
+                    /*
+                     * Додаємо поточного користувача,
+                     * якщо backend його не повернув.
+                     *
+                     * Це робить структуру members
+                     * стабільною для getChatName().
+                     */
+                    const hasCurrentUser =
+                        members.some(
+                            (member) =>
+                                Number(
+                                    member.id
+                                ) ===
+                                Number(
+                                    user?.id
+                                )
+                        );
+
+                    if (
+                        !hasCurrentUser &&
+                        user
+                    ) {
+                        members.push({
+                            id:
+                                user.id,
+
+                            nickname:
+                                user.nickname
+                        });
+                    }
+
+
+                    chat = {
+                        ...chat,
+
+                        members,
+
+                        unreadCount:
+                            0
+                    };
 
 
                     // ==================================
@@ -682,16 +963,30 @@ function MessengerPage() {
                             const exists =
                                 safeChats.some(
                                     (item) =>
-                                        item.id ===
-                                        chat.id
+                                        Number(
+                                            item.id
+                                        ) ===
+                                        Number(
+                                            chat.id
+                                        )
                                 );
 
                             if (exists) {
                                 return safeChats.map(
                                     (item) =>
-                                        item.id ===
-                                        chat.id
-                                            ? chat
+                                        Number(
+                                            item.id
+                                        ) ===
+                                        Number(
+                                            chat.id
+                                        )
+                                            ? {
+                                                ...item,
+                                                ...chat,
+                                                members,
+                                                unreadCount:
+                                                    0
+                                            }
                                             : item
                                 );
                             }
@@ -723,6 +1018,7 @@ function MessengerPage() {
             },
             [
                 token,
+                user,
                 openChat
             ]
         );
@@ -756,8 +1052,12 @@ function MessengerPage() {
                 const otherMember =
                     members.find(
                         (member) =>
-                            Number(member.id) !==
-                            Number(user?.id)
+                            Number(
+                                member.id
+                            ) !==
+                            Number(
+                                user?.id
+                            )
                     );
 
                 return (
@@ -924,8 +1224,12 @@ function MessengerPage() {
 
                             return safeChats.filter(
                                 (chat) =>
-                                    chat.id !==
-                                    chatId
+                                    Number(
+                                        chat.id
+                                    ) !==
+                                    Number(
+                                        chatId
+                                    )
                             );
                         }
                     );
@@ -987,7 +1291,7 @@ function MessengerPage() {
                         }
                     );
 
-                    const acceptedChat =
+                    let acceptedChat =
                         result?.chat;
 
                     if (!acceptedChat) {
@@ -995,6 +1299,91 @@ function MessengerPage() {
                             "Чат не був отриманий після прийняття запиту."
                         );
                     }
+
+
+                    // ==================================
+                    // NORMALIZE ACCEPTED CHAT MEMBERS
+                    // ==================================
+
+                    const acceptedMembers =
+                        Array.isArray(
+                            acceptedChat.members
+                        )
+                            ? [
+                                ...acceptedChat.members
+                            ]
+                            : [];
+
+
+                    /*
+                     * Додаємо поточного користувача.
+                     */
+                    const hasCurrentUser =
+                        acceptedMembers.some(
+                            (member) =>
+                                Number(
+                                    member.id
+                                ) ===
+                                Number(
+                                    user?.id
+                                )
+                        );
+
+                    if (
+                        !hasCurrentUser &&
+                        user
+                    ) {
+                        acceptedMembers.push({
+                            id:
+                                user.id,
+
+                            nickname:
+                                user.nickname
+                        });
+                    }
+
+
+                    /*
+                     * У запиті sender — це
+                     * другий учасник.
+                     */
+                    const requestSender =
+                        request.sender;
+
+                    const hasSender =
+                        acceptedMembers.some(
+                            (member) =>
+                                Number(
+                                    member.id
+                                ) ===
+                                Number(
+                                    requestSender?.id
+                                )
+                        );
+
+                    if (
+                        !hasSender &&
+                        requestSender
+                    ) {
+                        acceptedMembers.push({
+                            id:
+                                requestSender.id,
+
+                            nickname:
+                                requestSender.nickname
+                        });
+                    }
+
+
+                    acceptedChat = {
+                        ...acceptedChat,
+
+                        members:
+                            acceptedMembers,
+
+                        unreadCount:
+                            0
+                    };
 
 
                     // ==================================
@@ -1013,16 +1402,29 @@ function MessengerPage() {
                             const exists =
                                 safeChats.some(
                                     (chat) =>
-                                        chat.id ===
-                                        acceptedChat.id
+                                        Number(
+                                            chat.id
+                                        ) ===
+                                        Number(
+                                            acceptedChat.id
+                                        )
                                 );
 
                             if (exists) {
                                 return safeChats.map(
                                     (chat) =>
-                                        chat.id ===
-                                        acceptedChat.id
-                                            ? acceptedChat
+                                        Number(
+                                            chat.id
+                                        ) ===
+                                        Number(
+                                            acceptedChat.id
+                                        )
+                                            ? {
+                                                ...chat,
+                                                ...acceptedChat,
+                                                unreadCount:
+                                                    0
+                                            }
                                             : chat
                                 );
                             }
@@ -1056,6 +1458,7 @@ function MessengerPage() {
             },
             [
                 token,
+                user,
                 openChat
             ]
         );
@@ -1365,3 +1768,4 @@ function MessengerPage() {
 }
 
 export default MessengerPage;
+
