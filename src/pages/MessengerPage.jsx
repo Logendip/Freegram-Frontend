@@ -1,4 +1,3 @@
-
 import {
     useCallback,
     useEffect,
@@ -52,21 +51,30 @@ function MessengerPage() {
 
     const handleReceiveMessage =
         useCallback((message) => {
+            if (!message) {
+                return;
+            }
+
             setMessages(
                 (previousMessages) => {
+                    const safeMessages =
+                        Array.isArray(previousMessages)
+                            ? previousMessages
+                            : [];
+
                     const exists =
-                        previousMessages.some(
+                        safeMessages.some(
                             (item) =>
                                 item.id ===
                                 message.id
                         );
 
                     if (exists) {
-                        return previousMessages;
+                        return safeMessages;
                     }
 
                     return [
-                        ...previousMessages,
+                        ...safeMessages,
                         message
                     ];
                 }
@@ -76,26 +84,46 @@ function MessengerPage() {
 
     const handleMessageDeletedForEveryone =
         useCallback((data) => {
+            if (!data) {
+                return;
+            }
+
             setMessages(
-                (previousMessages) =>
-                    previousMessages.filter(
+                (previousMessages) => {
+                    const safeMessages =
+                        Array.isArray(previousMessages)
+                            ? previousMessages
+                            : [];
+
+                    return safeMessages.filter(
                         (message) =>
                             message.id !==
                             data.messageId
-                    )
+                    );
+                }
             );
         }, []);
 
 
     const handleMessageDeletedForMe =
         useCallback((data) => {
+            if (!data) {
+                return;
+            }
+
             setMessages(
-                (previousMessages) =>
-                    previousMessages.filter(
+                (previousMessages) => {
+                    const safeMessages =
+                        Array.isArray(previousMessages)
+                            ? previousMessages
+                            : [];
+
+                    return safeMessages.filter(
                         (message) =>
                             message.id !==
                             data.messageId
-                    )
+                    );
+                }
             );
         }, []);
 
@@ -103,12 +131,18 @@ function MessengerPage() {
     const handleChatDeleted =
         useCallback((chatId) => {
             setChats(
-                (previousChats) =>
-                    previousChats.filter(
+                (previousChats) => {
+                    const safeChats =
+                        Array.isArray(previousChats)
+                            ? previousChats
+                            : [];
+
+                    return safeChats.filter(
                         (chat) =>
                             chat.id !==
                             chatId
-                    )
+                    );
+                }
             );
 
             setSelectedChat(
@@ -132,21 +166,32 @@ function MessengerPage() {
 
     const handleChatRequestCreated =
         useCallback((data) => {
+            if (!data) {
+                return;
+            }
+
             setChatRequests(
                 (previousRequests) => {
+                    const safeRequests =
+                        Array.isArray(
+                            previousRequests
+                        )
+                            ? previousRequests
+                            : [];
+
                     const exists =
-                        previousRequests.some(
+                        safeRequests.some(
                             (request) =>
                                 request.requestId ===
                                 data.requestId
                         );
 
                     if (exists) {
-                        return previousRequests;
+                        return safeRequests;
                     }
 
                     return [
-                        ...previousRequests,
+                        ...safeRequests,
                         data
                     ];
                 }
@@ -208,12 +253,23 @@ function MessengerPage() {
                     const data =
                         await getChats(token);
 
-                    setChats(data);
+                    /*
+                     * API повинна повернути масив.
+                     * Якщо з якихось причин прийшов
+                     * undefined/null — використовуємо [].
+                     */
+                    setChats(
+                        Array.isArray(data)
+                            ? data
+                            : []
+                    );
                 } catch (error) {
                     console.error(
                         "Failed to load chats:",
                         error
                     );
+
+                    setChats([]);
                 }
             };
 
@@ -240,12 +296,18 @@ function MessengerPage() {
                             token
                         );
 
-                    setChatRequests(data);
+                    setChatRequests(
+                        Array.isArray(data)
+                            ? data
+                            : []
+                    );
                 } catch (error) {
                     console.error(
                         "Failed to load chat requests:",
                         error
                     );
+
+                    setChatRequests([]);
                 }
             };
 
@@ -278,8 +340,6 @@ function MessengerPage() {
                     setSelectedChat(chat);
                     setMessages([]);
 
-                    // На мобільному відкриваємо
-                    // чат на весь екран.
                     setMobileChatOpen(true);
 
                     await joinChat(chat.id);
@@ -290,12 +350,18 @@ function MessengerPage() {
                             chat.id
                         );
 
-                    setMessages(data);
+                    setMessages(
+                        Array.isArray(data)
+                            ? data
+                            : []
+                    );
                 } catch (error) {
                     console.error(
                         "Failed to open chat:",
                         error
                     );
+
+                    setMessages([]);
                 }
             },
             [
@@ -360,7 +426,7 @@ function MessengerPage() {
                         );
 
                     let chat =
-                        result.chat;
+                        result?.chat;
 
                     if (!chat) {
                         throw new Error(
@@ -374,10 +440,15 @@ function MessengerPage() {
                     // ==================================
 
                     const hasSelectedUser =
-                        chat.members?.some(
+                        Array.isArray(
+                            chat.members
+                        ) &&
+                        chat.members.some(
                             (member) =>
                                 Number(member.id) ===
-                                Number(selectedUser.id)
+                                Number(
+                                    selectedUser.id
+                                )
                         );
 
                     if (!hasSelectedUser) {
@@ -385,7 +456,11 @@ function MessengerPage() {
                             ...chat,
 
                             members: [
-                                ...(chat.members || []),
+                                ...(Array.isArray(
+                                    chat.members
+                                )
+                                    ? chat.members
+                                    : []),
 
                                 {
                                     id:
@@ -405,15 +480,22 @@ function MessengerPage() {
 
                     setChats(
                         (previousChats) => {
+                            const safeChats =
+                                Array.isArray(
+                                    previousChats
+                                )
+                                    ? previousChats
+                                    : [];
+
                             const exists =
-                                previousChats.some(
+                                safeChats.some(
                                     (item) =>
                                         item.id ===
                                         chat.id
                                 );
 
                             if (exists) {
-                                return previousChats.map(
+                                return safeChats.map(
                                     (item) =>
                                         item.id ===
                                         chat.id
@@ -423,7 +505,7 @@ function MessengerPage() {
                             }
 
                             return [
-                                ...previousChats,
+                                ...safeChats,
                                 chat
                             ];
                         }
@@ -472,8 +554,15 @@ function MessengerPage() {
                     );
                 }
 
+                const members =
+                    Array.isArray(
+                        chat.members
+                    )
+                        ? chat.members
+                        : [];
+
                 const otherMember =
-                    chat.members?.find(
+                    members.find(
                         (member) =>
                             Number(member.id) !==
                             Number(user?.id)
@@ -633,12 +722,20 @@ function MessengerPage() {
                     );
 
                     setChats(
-                        (previousChats) =>
-                            previousChats.filter(
+                        (previousChats) => {
+                            const safeChats =
+                                Array.isArray(
+                                    previousChats
+                                )
+                                    ? previousChats
+                                    : [];
+
+                            return safeChats.filter(
                                 (chat) =>
                                     chat.id !==
                                     chatId
-                            )
+                            );
+                        }
                     );
 
                     setSelectedChat(null);
@@ -680,16 +777,24 @@ function MessengerPage() {
                         );
 
                     setChatRequests(
-                        (previousRequests) =>
-                            previousRequests.filter(
+                        (previousRequests) => {
+                            const safeRequests =
+                                Array.isArray(
+                                    previousRequests
+                                )
+                                    ? previousRequests
+                                    : [];
+
+                            return safeRequests.filter(
                                 (item) =>
                                     item.requestId !==
                                     request.requestId
-                            )
+                            );
+                        }
                     );
 
                     const acceptedChat =
-                        result.chat;
+                        result?.chat;
 
                     if (!acceptedChat) {
                         throw new Error(
@@ -704,15 +809,22 @@ function MessengerPage() {
 
                     setChats(
                         (previousChats) => {
+                            const safeChats =
+                                Array.isArray(
+                                    previousChats
+                                )
+                                    ? previousChats
+                                    : [];
+
                             const exists =
-                                previousChats.some(
+                                safeChats.some(
                                     (chat) =>
                                         chat.id ===
                                         acceptedChat.id
                                 );
 
                             if (exists) {
-                                return previousChats.map(
+                                return safeChats.map(
                                     (chat) =>
                                         chat.id ===
                                         acceptedChat.id
@@ -722,7 +834,7 @@ function MessengerPage() {
                             }
 
                             return [
-                                ...previousChats,
+                                ...safeChats,
                                 acceptedChat
                             ];
                         }
@@ -773,12 +885,20 @@ function MessengerPage() {
                     );
 
                     setChatRequests(
-                        (previousRequests) =>
-                            previousRequests.filter(
+                        (previousRequests) => {
+                            const safeRequests =
+                                Array.isArray(
+                                    previousRequests
+                                )
+                                    ? previousRequests
+                                    : [];
+
+                            return safeRequests.filter(
                                 (item) =>
                                     item.requestId !==
                                     request.requestId
-                            )
+                            );
+                        }
                     );
                 } catch (error) {
                     console.error(
@@ -797,6 +917,26 @@ function MessengerPage() {
 
 
     // ==========================================
+    // SAFE VALUES FOR RENDER
+    // ==========================================
+
+    const safeChats =
+        Array.isArray(chats)
+            ? chats
+            : [];
+
+    const safeMessages =
+        Array.isArray(messages)
+            ? messages
+            : [];
+
+    const safeChatRequests =
+        Array.isArray(chatRequests)
+            ? chatRequests
+            : [];
+
+
+    // ==========================================
     // RENDER
     // ==========================================
 
@@ -807,7 +947,7 @@ function MessengerPage() {
             }
             sidebar={
                 <ChatSidebar
-                    chats={chats}
+                    chats={safeChats}
                     selectedChat={
                         selectedChat
                     }
@@ -832,7 +972,7 @@ function MessengerPage() {
                 CHAT REQUESTS
             ====================================== */}
 
-            {chatRequests.length > 0 && (
+            {safeChatRequests.length > 0 && (
                 <div
                     style={{
                         position: "fixed",
@@ -848,7 +988,7 @@ function MessengerPage() {
                         gap: "12px"
                     }}
                 >
-                    {chatRequests.map(
+                    {safeChatRequests.map(
                         (request) => (
                             <div
                                 key={
@@ -988,7 +1128,7 @@ function MessengerPage() {
 
                     <MessageList
                         messages={
-                            messages
+                            safeMessages
                         }
                         currentUserId={
                             user?.id
