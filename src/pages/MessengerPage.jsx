@@ -1,4 +1,3 @@
-
 import {
     useCallback,
     useEffect,
@@ -62,6 +61,128 @@ function MessengerPage() {
 
 
     // ==========================================
+    // NORMALIZE MEMBER
+    // ==========================================
+
+    const normalizeMember =
+        useCallback(
+            (member) => {
+                if (!member) {
+                    return null;
+                }
+
+                const id =
+                    Number(
+                        member.id ??
+                        member.Id ??
+                        member.userId ??
+                        member.UserId
+                    );
+
+                if (!id) {
+                    return null;
+                }
+
+                return {
+                    ...member,
+
+                    id,
+
+                    nickname:
+                        member.nickname ??
+                        member.Nickname ??
+                        "Користувач"
+                };
+            },
+            []
+        );
+
+
+    // ==========================================
+    // NORMALIZE MEMBERS
+    // ==========================================
+
+    const normalizeMembers =
+        useCallback(
+            (members) => {
+                if (!Array.isArray(members)) {
+                    return [];
+                }
+
+                return members
+                    .map(normalizeMember)
+                    .filter(Boolean);
+            },
+            [normalizeMember]
+        );
+
+
+    // ==========================================
+    // NORMALIZE CHAT
+    // ==========================================
+
+    const normalizeChat =
+        useCallback(
+            (chat) => {
+                if (!chat) {
+                    return null;
+                }
+
+                const id =
+                    Number(
+                        chat.id ??
+                        chat.Id
+                    );
+
+                if (!id) {
+                    return null;
+                }
+
+                return {
+                    ...chat,
+
+                    id,
+
+                    name:
+                        chat.name ??
+                        chat.Name ??
+                        "",
+
+                    isGroup:
+                        Boolean(
+                            chat.isGroup ??
+                            chat.IsGroup
+                        ),
+
+                    creatorId:
+                        Number(
+                            chat.creatorId ??
+                            chat.CreatorId
+                        ) || null,
+
+                    createdAt:
+                        chat.createdAt ??
+                        chat.CreatedAt,
+
+                    members:
+                        normalizeMembers(
+                            chat.members ??
+                            chat.Members
+                        ),
+
+                    unreadCount:
+                        Number(
+                            chat.unreadCount ??
+                            chat.UnreadCount ??
+                            0
+                        )
+                };
+            },
+            [normalizeMembers]
+        );
+
+
+    // ==========================================
     // SIGNALR - RECEIVE MESSAGE
     // ==========================================
 
@@ -74,7 +195,8 @@ function MessengerPage() {
 
                 const messageChatId =
                     Number(
-                        message.chatId
+                        message.chatId ??
+                        message.ChatId
                     );
 
                 const currentChatId =
@@ -85,7 +207,9 @@ function MessengerPage() {
                 const messageSenderId =
                     Number(
                         message.sender?.id ??
-                        message.senderId
+                        message.sender?.Id ??
+                        message.senderId ??
+                        message.SenderId
                     );
 
                 const currentUserId =
@@ -115,15 +239,20 @@ function MessengerPage() {
                                     ? previousMessages
                                     : [];
 
+                            const messageId =
+                                Number(
+                                    message.id ??
+                                    message.Id
+                                );
+
                             const exists =
                                 safeMessages.some(
                                     (item) =>
                                         Number(
-                                            item.id
+                                            item.id ??
+                                            item.Id
                                         ) ===
-                                        Number(
-                                            message.id
-                                        )
+                                        messageId
                                 );
 
                             if (exists) {
@@ -134,9 +263,17 @@ function MessengerPage() {
                                 ...safeMessages,
                                 {
                                     ...message,
+
+                                    id:
+                                        messageId,
+
+                                    chatId:
+                                        messageChatId,
+
                                     isRead:
                                         Boolean(
-                                            message.isRead
+                                            message.isRead ??
+                                            message.IsRead
                                         )
                                 }
                             ];
@@ -206,6 +343,18 @@ function MessengerPage() {
                     return;
                 }
 
+                const messageId =
+                    Number(
+                        data.messageId ??
+                        data.MessageId
+                    );
+
+                const chatId =
+                    Number(
+                        data.chatId ??
+                        data.ChatId
+                    );
+
                 setMessages(
                     (previousMessages) => {
                         const safeMessages =
@@ -217,9 +366,7 @@ function MessengerPage() {
 
                         if (
                             selectedChat &&
-                            Number(
-                                data.chatId
-                            ) !==
+                            chatId !==
                                 Number(
                                     selectedChat.id
                                 )
@@ -233,9 +380,7 @@ function MessengerPage() {
                                     Number(
                                         message.id
                                     ) !==
-                                    Number(
-                                        data.messageId
-                                    )
+                                    messageId
                                 ) {
                                     return message;
                                 }
@@ -264,6 +409,12 @@ function MessengerPage() {
                     return;
                 }
 
+                const messageId =
+                    Number(
+                        data.messageId ??
+                        data.MessageId
+                    );
+
                 setMessages(
                     (previousMessages) => {
                         const safeMessages =
@@ -278,9 +429,7 @@ function MessengerPage() {
                                 Number(
                                     message.id
                                 ) !==
-                                Number(
-                                    data.messageId
-                                )
+                                messageId
                         );
                     }
                 );
@@ -300,6 +449,12 @@ function MessengerPage() {
                     return;
                 }
 
+                const messageId =
+                    Number(
+                        data.messageId ??
+                        data.MessageId
+                    );
+
                 setMessages(
                     (previousMessages) => {
                         const safeMessages =
@@ -314,9 +469,7 @@ function MessengerPage() {
                                 Number(
                                     message.id
                                 ) !==
-                                Number(
-                                    data.messageId
-                                )
+                                messageId
                         );
                     }
                 );
@@ -413,12 +566,24 @@ function MessengerPage() {
                         Number(
                             data.chatId ??
                             data.ChatId
-                        ),
+                        ) || null,
 
                     sender:
                         data.sender ??
-                        data.Sender
+                        data.Sender,
+
+                    createdAt:
+                        data.createdAt ??
+                        data.CreatedAt
                 };
+
+
+                if (
+                    !normalizedRequest.requestId
+                ) {
+                    return;
+                }
+
 
                 setChatRequests(
                     (previousRequests) => {
@@ -452,6 +617,91 @@ function MessengerPage() {
                 );
             },
             []
+        );
+
+
+    // ==========================================
+    // PRIVATE CHAT REQUEST ACCEPTED
+    // ==========================================
+
+    const handleChatRequestAccepted =
+        useCallback(
+            async (data) => {
+                if (!data) {
+                    return;
+                }
+
+                const chatData =
+                    data.chat ??
+                    data.Chat;
+
+                const normalizedChat =
+                    normalizeChat(
+                        chatData
+                    );
+
+                if (!normalizedChat) {
+                    return;
+                }
+
+
+                setChats(
+                    (previousChats) => {
+                        const safeChats =
+                            Array.isArray(
+                                previousChats
+                            )
+                                ? previousChats
+                                : [];
+
+                        const exists =
+                            safeChats.some(
+                                (chat) =>
+                                    Number(
+                                        chat.id
+                                    ) ===
+                                    Number(
+                                        normalizedChat.id
+                                    )
+                            );
+
+                        if (exists) {
+                            return safeChats.map(
+                                (chat) =>
+                                    Number(
+                                        chat.id
+                                    ) ===
+                                    Number(
+                                        normalizedChat.id
+                                    )
+                                        ? {
+                                            ...chat,
+                                            ...normalizedChat,
+                                            unreadCount:
+                                                0
+                                        }
+                                        : chat
+                            );
+                        }
+
+                        return [
+                            ...safeChats,
+                            normalizedChat
+                        ];
+                    }
+                );
+
+
+                // Якщо це відповідь на наш запит —
+                // можна одразу відкрити чат.
+                if (
+                    data.userId ??
+                    data.UserId
+                ) {
+                    return;
+                }
+            },
+            [normalizeChat]
         );
 
 
@@ -519,11 +769,13 @@ function MessengerPage() {
                         data.Sender
                 };
 
+
                 if (
                     !normalizedInvitation.invitationId
                 ) {
                     return;
                 }
+
 
                 setGroupInvitations(
                     (previousInvitations) => {
@@ -567,9 +819,11 @@ function MessengerPage() {
     const handleGroupInvitationAccepted =
         useCallback(
             () => {
-                // Existing group creator
-                // receives GroupMemberAdded
-                // when a member joins.
+                // Backend sends this event
+                // to the group creator.
+                //
+                // The actual member update
+                // comes through GroupMemberAdded.
             },
             []
         );
@@ -620,60 +874,13 @@ function MessengerPage() {
                         user?.id
                     );
 
+
                 if (
                     !chatId ||
                     !addedUserId
                 ) {
                     return;
                 }
-
-
-                // ==================================
-                // NORMALIZE MEMBERS
-                // ==================================
-
-                const normalizeMembers =
-                    (members) => {
-                        if (
-                            !Array.isArray(
-                                members
-                            )
-                        ) {
-                            return [];
-                        }
-
-                        return members
-                            .map(
-                                (member) => {
-                                    const memberId =
-                                        Number(
-                                            member.id ??
-                                            member.userId ??
-                                            member.UserId ??
-                                            member.Id
-                                        );
-
-                                    if (
-                                        !memberId
-                                    ) {
-                                        return null;
-                                    }
-
-                                    return {
-                                        id:
-                                            memberId,
-
-                                        nickname:
-                                            member.nickname ??
-                                            member.Nickname ??
-                                            "Користувач"
-                                    };
-                                }
-                            )
-                            .filter(
-                                Boolean
-                            );
-                    };
 
 
                 // ==================================
@@ -685,45 +892,14 @@ function MessengerPage() {
                     currentUserId &&
                     chatData
                 ) {
-                    const rawMembers =
-                        chatData.members ??
-                        chatData.Members;
-
-                    const normalizedMembers =
-                        normalizeMembers(
-                            rawMembers
+                    const normalizedChat =
+                        normalizeChat(
+                            chatData
                         );
 
-                    const normalizedChat = {
-                        ...chatData,
-
-                        id:
-                            Number(
-                                chatData.id ??
-                                chatData.Id
-                            ),
-
-                        name:
-                            chatData.name ??
-                            chatData.Name ??
-                            "Група",
-
-                        isGroup:
-                            true,
-
-                        creatorId:
-                            Number(
-                                chatData.creatorId ??
-                                chatData.CreatorId
-                            ),
-
-                        members:
-                            normalizedMembers,
-
-                        unreadCount:
-                            0
-                    };
-
+                    if (!normalizedChat) {
+                        return;
+                    }
 
                     setChats(
                         (previousChats) => {
@@ -867,7 +1043,6 @@ function MessengerPage() {
                         if (exists) {
                             return {
                                 ...previousChat,
-
                                 members:
                                     currentMembers
                             };
@@ -884,7 +1059,11 @@ function MessengerPage() {
                     }
                 );
             },
-            [user]
+            [
+                user,
+                normalizeChat,
+                normalizeMembers
+            ]
         );
 
 
@@ -915,6 +1094,7 @@ function MessengerPage() {
                     Number(
                         user?.id
                     );
+
 
                 if (
                     !chatId ||
@@ -990,24 +1170,16 @@ function MessengerPage() {
                                     return chat;
                                 }
 
-                                if (
-                                    !Array.isArray(
-                                        chat.members
-                                    )
-                                ) {
-                                    return chat;
-                                }
-
                                 return {
                                     ...chat,
 
                                     members:
-                                        chat.members.filter(
+                                        normalizeMembers(
+                                            chat.members
+                                        ).filter(
                                             (member) =>
                                                 Number(
-                                                    member.id ??
-                                                    member.userId ??
-                                                    member.UserId
+                                                    member.id
                                                 ) !==
                                                 removedUserId
                                         )
@@ -1030,24 +1202,16 @@ function MessengerPage() {
                             return previousChat;
                         }
 
-                        if (
-                            !Array.isArray(
-                                previousChat.members
-                            )
-                        ) {
-                            return previousChat;
-                        }
-
                         return {
                             ...previousChat,
 
                             members:
-                                previousChat.members.filter(
+                                normalizeMembers(
+                                    previousChat.members
+                                ).filter(
                                     (member) =>
                                         Number(
-                                            member.id ??
-                                            member.userId ??
-                                            member.UserId
+                                            member.id
                                         ) !==
                                         removedUserId
                                 )
@@ -1055,7 +1219,10 @@ function MessengerPage() {
                     }
                 );
             },
-            [user]
+            [
+                user,
+                normalizeMembers
+            ]
         );
 
 
@@ -1092,7 +1259,7 @@ function MessengerPage() {
             handleChatRequestCreated,
 
         onChatRequestAccepted:
-            null,
+            handleChatRequestAccepted,
 
         onChatRequestRejected:
             handleChatRequestRejected,
@@ -1145,7 +1312,8 @@ function MessengerPage() {
                         if (
                             Number(
                                 chat.id
-                            ) !== chatId
+                            ) !==
+                            chatId
                         ) {
                             return chat;
                         }
@@ -1166,11 +1334,16 @@ function MessengerPage() {
                     const message
                     of messages
                 ) {
-                    if (
+                    const senderId =
                         Number(
                             message.sender?.id ??
-                            message.senderId
-                        ) ===
+                            message.sender?.Id ??
+                            message.senderId ??
+                            message.SenderId
+                        );
+
+                    if (
+                        senderId ===
                         Number(user.id)
                     ) {
                         continue;
@@ -1243,10 +1416,19 @@ function MessengerPage() {
                     const data =
                         await getChats(token);
 
-                    setChats(
+                    const normalized =
                         Array.isArray(data)
                             ? data
-                            : []
+                                .map(
+                                    normalizeChat
+                                )
+                                .filter(
+                                    Boolean
+                                )
+                            : [];
+
+                    setChats(
+                        normalized
                     );
                 } catch (error) {
                     console.error(
@@ -1259,7 +1441,10 @@ function MessengerPage() {
             };
 
         loadChats();
-    }, [token]);
+    }, [
+        token,
+        normalizeChat
+    ]);
 
 
     // ==========================================
@@ -1293,7 +1478,21 @@ function MessengerPage() {
                                             request.RequestId ??
                                             request.id ??
                                             request.Id
-                                        )
+                                        ),
+
+                                    chatId:
+                                        Number(
+                                            request.chatId ??
+                                            request.ChatId
+                                        ) || null,
+
+                                    sender:
+                                        request.sender ??
+                                        request.Sender,
+
+                                    createdAt:
+                                        request.createdAt ??
+                                        request.CreatedAt
                                 })
                             )
                             : []
@@ -1358,7 +1557,11 @@ function MessengerPage() {
 
                                     sender:
                                         invitation.sender ??
-                                        invitation.Sender
+                                        invitation.Sender,
+
+                                    createdAt:
+                                        invitation.createdAt ??
+                                        invitation.CreatedAt
                                 })
                             )
                             : [];
@@ -1408,10 +1611,16 @@ function MessengerPage() {
 
                     markedAsReadRef.current.clear();
 
-                    const normalizedChat = {
-                        ...chat,
-                        unreadCount: 0
-                    };
+                    const normalizedChat =
+                        normalizeChat(
+                            chat
+                        );
+
+                    if (!normalizedChat) {
+                        return;
+                    }
+
+                    normalizedChat.unreadCount = 0;
 
 
                     setChats(
@@ -1430,7 +1639,7 @@ function MessengerPage() {
                                             item.id
                                         ) ===
                                         Number(
-                                            chat.id
+                                            normalizedChat.id
                                         )
                                 );
 
@@ -1447,11 +1656,11 @@ function MessengerPage() {
                                         item.id
                                     ) ===
                                     Number(
-                                        chat.id
+                                        normalizedChat.id
                                     )
                                         ? {
                                             ...item,
-                                            ...chat,
+                                            ...normalizedChat,
                                             unreadCount:
                                                 0
                                         }
@@ -1470,13 +1679,14 @@ function MessengerPage() {
                     setMobileChatOpen(true);
 
                     await joinChat(
-                        chat.id
+                        normalizedChat.id
                     );
+
 
                     const data =
                         await getMessages(
                             token,
-                            chat.id
+                            normalizedChat.id
                         );
 
                     setMessages(
@@ -1484,9 +1694,23 @@ function MessengerPage() {
                             ? data.map(
                                 (message) => ({
                                     ...message,
+
+                                    id:
+                                        Number(
+                                            message.id ??
+                                            message.Id
+                                        ),
+
+                                    chatId:
+                                        Number(
+                                            message.chatId ??
+                                            message.ChatId
+                                        ),
+
                                     isRead:
                                         Boolean(
-                                            message.isRead
+                                            message.isRead ??
+                                            message.IsRead
                                         )
                                 })
                             )
@@ -1505,7 +1729,8 @@ function MessengerPage() {
                 token,
                 selectedChat,
                 joinChat,
-                leaveChat
+                leaveChat,
+                normalizeChat
             ]
         );
 
@@ -1524,52 +1749,18 @@ function MessengerPage() {
                     return;
                 }
 
-                const groupId =
-                    Number(
-                        createdChat.id ??
-                        createdChat.Id
+                const groupChat =
+                    normalizeChat(
+                        createdChat
                     );
 
-                if (!groupId) {
+                if (!groupChat) {
                     return;
                 }
 
-                const members =
-                    Array.isArray(
-                        createdChat.members
-                    )
-                        ? createdChat.members
-                        : Array.isArray(
-                            createdChat.Members
-                        )
-                            ? createdChat.Members
-                            : [];
+                groupChat.isGroup = true;
+                groupChat.unreadCount = 0;
 
-                const groupChat = {
-                    ...createdChat,
-
-                    id:
-                        groupId,
-
-                    name:
-                        createdChat.name ??
-                        createdChat.Name ??
-                        "Група",
-
-                    isGroup:
-                        true,
-
-                    creatorId:
-                        Number(
-                            createdChat.creatorId ??
-                            createdChat.CreatorId
-                        ),
-
-                    members,
-
-                    unreadCount:
-                        0
-                };
 
                 setChats(
                     (previousChats) => {
@@ -1586,7 +1777,9 @@ function MessengerPage() {
                                     Number(
                                         chat.id
                                     ) ===
-                                    groupId
+                                    Number(
+                                        groupChat.id
+                                    )
                             );
 
                         if (exists) {
@@ -1595,12 +1788,12 @@ function MessengerPage() {
                                     Number(
                                         chat.id
                                     ) ===
-                                    groupId
+                                    Number(
+                                        groupChat.id
+                                    )
                                         ? {
                                             ...chat,
-                                            ...groupChat,
-                                            unreadCount:
-                                                0
+                                            ...groupChat
                                         }
                                         : chat
                             );
@@ -1613,13 +1806,15 @@ function MessengerPage() {
                     }
                 );
 
+
                 await openChat(
                     groupChat
                 );
             },
             [
                 token,
-                openChat
+                openChat,
+                normalizeChat
             ]
         );
 
@@ -1647,15 +1842,8 @@ function MessengerPage() {
 
 
                     setGroupInvitations(
-                        (previousInvitations) => {
-                            const safeInvitations =
-                                Array.isArray(
-                                    previousInvitations
-                                )
-                                    ? previousInvitations
-                                    : [];
-
-                            return safeInvitations.filter(
+                        (previousInvitations) =>
+                            previousInvitations.filter(
                                 (item) =>
                                     Number(
                                         item.invitationId
@@ -1663,13 +1851,14 @@ function MessengerPage() {
                                     Number(
                                         invitation.invitationId
                                     )
-                            );
-                        }
+                            )
                     );
 
 
-                    let acceptedChat =
-                        result?.chat;
+                    const acceptedChat =
+                        normalizeChat(
+                            result?.chat
+                        );
 
                     if (!acceptedChat) {
                         throw new Error(
@@ -1677,74 +1866,8 @@ function MessengerPage() {
                         );
                     }
 
-
-                    const members =
-                        Array.isArray(
-                            acceptedChat.members
-                        )
-                            ? [
-                                ...acceptedChat.members
-                            ]
-                            : [];
-
-
-                    const hasCurrentUser =
-                        members.some(
-                            (member) =>
-                                Number(
-                                    member.id ??
-                                    member.userId ??
-                                    member.UserId
-                                ) ===
-                                Number(
-                                    user?.id
-                                )
-                        );
-
-
-                    if (
-                        !hasCurrentUser &&
-                        user
-                    ) {
-                        members.push({
-                            id:
-                                user.id,
-
-                            nickname:
-                                user.nickname
-                        });
-                    }
-
-
-                    acceptedChat = {
-                        ...acceptedChat,
-
-                        id:
-                            Number(
-                                acceptedChat.id ??
-                                acceptedChat.Id
-                            ),
-
-                        name:
-                            acceptedChat.name ??
-                            acceptedChat.Name ??
-                            invitation.chatName ??
-                            "Група",
-
-                        isGroup:
-                            true,
-
-                        creatorId:
-                            Number(
-                                acceptedChat.creatorId ??
-                                acceptedChat.CreatorId
-                            ),
-
-                        members,
-
-                        unreadCount:
-                            0
-                    };
+                    acceptedChat.isGroup = true;
+                    acceptedChat.unreadCount = 0;
 
 
                     setChats(
@@ -1778,9 +1901,7 @@ function MessengerPage() {
                                         )
                                             ? {
                                                 ...chat,
-                                                ...acceptedChat,
-                                                unreadCount:
-                                                    0
+                                                ...acceptedChat
                                             }
                                             : chat
                                 );
@@ -1811,8 +1932,8 @@ function MessengerPage() {
             },
             [
                 token,
-                user,
-                openChat
+                openChat,
+                normalizeChat
             ]
         );
 
@@ -1838,15 +1959,8 @@ function MessengerPage() {
                     );
 
                     setGroupInvitations(
-                        (previousInvitations) => {
-                            const safeInvitations =
-                                Array.isArray(
-                                    previousInvitations
-                                )
-                                    ? previousInvitations
-                                    : [];
-
-                            return safeInvitations.filter(
+                        (previousInvitations) =>
+                            previousInvitations.filter(
                                 (item) =>
                                     Number(
                                         item.invitationId
@@ -1854,8 +1968,7 @@ function MessengerPage() {
                                     Number(
                                         invitation.invitationId
                                     )
-                            );
-                        }
+                            )
                     );
                 } catch (error) {
                     console.error(
@@ -2061,18 +2174,16 @@ function MessengerPage() {
                             selectedUser.id
                         );
 
-                    // ==========================================
-                    // CHAT ALREADY EXISTS
-                    // ==========================================
 
                     let chat =
                         result?.chat;
 
-                    if (!chat) {
-                        // ==========================================
-                        // REQUEST WAS SENT
-                        // ==========================================
 
+                    // ==================================
+                    // REQUEST WAS SENT
+                    // ==================================
+
+                    if (!chat) {
                         alert(
                             "Запрошення на чат надіслано. Очікуємо на відповідь користувача."
                         );
@@ -2080,74 +2191,21 @@ function MessengerPage() {
                         return;
                     }
 
-                    const existingMembers =
-                        Array.isArray(
-                            chat.members
-                        )
-                            ? chat.members
-                            : [];
 
-                    const members = [
-                        ...existingMembers
-                    ];
-
-                    const hasSelectedUser =
-                        members.some(
-                            (member) =>
-                                Number(
-                                    member.id ??
-                                    member.userId
-                                ) ===
-                                Number(
-                                    selectedUser.id
-                                )
+                    chat =
+                        normalizeChat(
+                            chat
                         );
 
-                    if (
-                        !hasSelectedUser
-                    ) {
-                        members.push({
-                            id:
-                                selectedUser.id,
-
-                            nickname:
-                                selectedUser.nickname
-                        });
-                    }
-
-                    const hasCurrentUser =
-                        members.some(
-                            (member) =>
-                                Number(
-                                    member.id ??
-                                    member.userId
-                                ) ===
-                                Number(
-                                    user?.id
-                                )
+                    if (!chat) {
+                        throw new Error(
+                            "Некоректні дані чату."
                         );
-
-                    if (
-                        !hasCurrentUser &&
-                        user
-                    ) {
-                        members.push({
-                            id:
-                                user.id,
-
-                            nickname:
-                                user.nickname
-                        });
                     }
 
-                    chat = {
-                        ...chat,
 
-                        members,
+                    chat.unreadCount = 0;
 
-                        unreadCount:
-                            0
-                    };
 
                     setChats(
                         (previousChats) => {
@@ -2181,7 +2239,6 @@ function MessengerPage() {
                                             ? {
                                                 ...item,
                                                 ...chat,
-                                                members,
                                                 unreadCount:
                                                     0
                                             }
@@ -2195,6 +2252,7 @@ function MessengerPage() {
                             ];
                         }
                     );
+
 
                     await openChat(
                         chat
@@ -2213,10 +2271,11 @@ function MessengerPage() {
             },
             [
                 token,
-                user,
-                openChat
+                openChat,
+                normalizeChat
             ]
         );
+
 
     // ==========================================
     // GET CHAT NAME
@@ -2247,9 +2306,7 @@ function MessengerPage() {
                     members.find(
                         (member) =>
                             Number(
-                                member.id ??
-                                member.userId ??
-                                member.UserId
+                                member.id
                             ) !==
                             Number(
                                 user?.id
@@ -2258,8 +2315,6 @@ function MessengerPage() {
 
                 return (
                     otherMember?.nickname ??
-                    otherMember?.Nickname ??
-                    chat.name ??
                     "Приватний чат"
                 );
             },
@@ -2426,15 +2481,8 @@ function MessengerPage() {
 
 
                     setChats(
-                        (previousChats) => {
-                            const safeChats =
-                                Array.isArray(
-                                    previousChats
-                                )
-                                    ? previousChats
-                                    : [];
-
-                            return safeChats.filter(
+                        (previousChats) =>
+                            previousChats.filter(
                                 (chat) =>
                                     Number(
                                         chat.id
@@ -2442,8 +2490,7 @@ function MessengerPage() {
                                     Number(
                                         chatId
                                     )
-                            );
-                        }
+                            )
                     );
 
 
@@ -2477,7 +2524,10 @@ function MessengerPage() {
     const handleAcceptChatRequest =
         useCallback(
             async (request) => {
-                if (!token || !request) {
+                if (
+                    !token ||
+                    !request
+                ) {
                     return;
                 }
 
@@ -2490,15 +2540,8 @@ function MessengerPage() {
 
 
                     setChatRequests(
-                        (previousRequests) => {
-                            const safeRequests =
-                                Array.isArray(
-                                    previousRequests
-                                )
-                                    ? previousRequests
-                                    : [];
-
-                            return safeRequests.filter(
+                        (previousRequests) =>
+                            previousRequests.filter(
                                 (item) =>
                                     Number(
                                         item.requestId
@@ -2506,13 +2549,14 @@ function MessengerPage() {
                                     Number(
                                         request.requestId
                                     )
-                            );
-                        }
+                            )
                     );
 
 
-                    let acceptedChat =
-                        result?.chat;
+                    const acceptedChat =
+                        normalizeChat(
+                            result?.chat
+                        );
 
                     if (!acceptedChat) {
                         throw new Error(
@@ -2520,85 +2564,7 @@ function MessengerPage() {
                         );
                     }
 
-
-                    const acceptedMembers =
-                        Array.isArray(
-                            acceptedChat.members
-                        )
-                            ? [
-                                ...acceptedChat.members
-                            ]
-                            : [];
-
-
-                    const hasCurrentUser =
-                        acceptedMembers.some(
-                            (member) =>
-                                Number(
-                                    member.id ??
-                                    member.userId ??
-                                    member.UserId
-                                ) ===
-                                Number(
-                                    user?.id
-                                )
-                        );
-
-
-                    if (
-                        !hasCurrentUser &&
-                        user
-                    ) {
-                        acceptedMembers.push({
-                            id:
-                                user.id,
-
-                            nickname:
-                                user.nickname
-                        });
-                    }
-
-
-                    const requestSender =
-                        request.sender;
-
-                    const hasSender =
-                        acceptedMembers.some(
-                            (member) =>
-                                Number(
-                                    member.id ??
-                                    member.userId ??
-                                    member.UserId
-                                ) ===
-                                Number(
-                                    requestSender?.id
-                                )
-                        );
-
-
-                    if (
-                        !hasSender &&
-                        requestSender
-                    ) {
-                        acceptedMembers.push({
-                            id:
-                                requestSender.id,
-
-                            nickname:
-                                requestSender.nickname
-                        });
-                    }
-
-
-                    acceptedChat = {
-                        ...acceptedChat,
-
-                        members:
-                            acceptedMembers,
-
-                        unreadCount:
-                            0
-                    };
+                    acceptedChat.unreadCount = 0;
 
 
                     setChats(
@@ -2621,7 +2587,6 @@ function MessengerPage() {
                                         )
                                 );
 
-
                             if (exists) {
                                 return safeChats.map(
                                     (chat) =>
@@ -2633,14 +2598,11 @@ function MessengerPage() {
                                         )
                                             ? {
                                                 ...chat,
-                                                ...acceptedChat,
-                                                unreadCount:
-                                                    0
+                                                ...acceptedChat
                                             }
                                             : chat
                                 );
                             }
-
 
                             return [
                                 ...safeChats,
@@ -2667,8 +2629,8 @@ function MessengerPage() {
             },
             [
                 token,
-                user,
-                openChat
+                openChat,
+                normalizeChat
             ]
         );
 
@@ -2680,7 +2642,10 @@ function MessengerPage() {
     const handleRejectChatRequest =
         useCallback(
             async (request) => {
-                if (!token || !request) {
+                if (
+                    !token ||
+                    !request
+                ) {
                     return;
                 }
 
@@ -2692,15 +2657,8 @@ function MessengerPage() {
 
 
                     setChatRequests(
-                        (previousRequests) => {
-                            const safeRequests =
-                                Array.isArray(
-                                    previousRequests
-                                )
-                                    ? previousRequests
-                                    : [];
-
-                            return safeRequests.filter(
+                        (previousRequests) =>
+                            previousRequests.filter(
                                 (item) =>
                                     Number(
                                         item.requestId
@@ -2708,8 +2666,7 @@ function MessengerPage() {
                                     Number(
                                         request.requestId
                                     )
-                            );
-                        }
+                            )
                     );
                 } catch (error) {
                     console.error(
@@ -2764,23 +2721,34 @@ function MessengerPage() {
 
             sidebar={
                 <ChatSidebar
-                    chats={safeChats}
+                    chats={
+                        safeChats
+                    }
+
                     selectedChat={
                         selectedChat
                     }
+
                     getChatName={
                         getChatName
                     }
+
                     onSelectChat={
                         openChat
                     }
-                    token={token}
+
+                    token={
+                        token
+                    }
+
                     currentUserId={
                         user?.id
                     }
+
                     onSelectUser={
                         handleSelectUser
                     }
+
                     onGroupCreated={
                         handleGroupCreated
                     }
@@ -2850,7 +2818,10 @@ function MessengerPage() {
                                         {
                                             request
                                                 .sender
-                                                ?.nickname
+                                                ?.nickname ??
+                                            request
+                                                .sender
+                                                ?.Nickname
                                         }
                                     </strong>{" "}
                                     хоче почати з вами чат.
@@ -2991,7 +2962,10 @@ function MessengerPage() {
                                         {
                                             invitation
                                                 .sender
-                                                ?.nickname
+                                                ?.nickname ??
+                                            invitation
+                                                .sender
+                                                ?.Nickname
                                         }
                                     </strong>{" "}
                                     запросив вас до групи{" "}
@@ -3080,9 +3054,11 @@ function MessengerPage() {
             {selectedChat ? (
                 <>
                     <ChatHeader
-                        name={getChatName(
-                            selectedChat
-                        )}
+                        name={
+                            getChatName(
+                                selectedChat
+                            )
+                        }
 
                         isGroup={
                             selectedChat.isGroup
