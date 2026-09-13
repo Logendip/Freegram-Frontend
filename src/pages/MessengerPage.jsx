@@ -456,6 +456,28 @@ function MessengerPage() {
 
 
     // ==========================================
+    // PRIVATE CHAT REQUEST REJECTED
+    // ==========================================
+
+    const handleChatRequestRejected =
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
+                }
+
+                const message =
+                    data.message ??
+                    data.Message ??
+                    "Чат не створився, тому що користувач відхилив ваше запрошення.";
+
+                alert(message);
+            },
+            []
+        );
+
+
+    // ==========================================
     // GROUP INVITATION RECEIVED
     // ==========================================
 
@@ -1071,6 +1093,9 @@ function MessengerPage() {
 
         onChatRequestAccepted:
             null,
+
+        onChatRequestRejected:
+            handleChatRequestRejected,
 
         onGroupInvitationReceived:
             handleGroupInvitationReceived,
@@ -2036,15 +2061,24 @@ function MessengerPage() {
                             selectedUser.id
                         );
 
+                    // ==========================================
+                    // CHAT ALREADY EXISTS
+                    // ==========================================
+
                     let chat =
                         result?.chat;
 
                     if (!chat) {
-                        throw new Error(
-                            "Чат не був створений."
-                        );
-                    }
+                        // ==========================================
+                        // REQUEST WAS SENT
+                        // ==========================================
 
+                        alert(
+                            "Запрошення на чат надіслано. Очікуємо на відповідь користувача."
+                        );
+
+                        return;
+                    }
 
                     const existingMembers =
                         Array.isArray(
@@ -2056,7 +2090,6 @@ function MessengerPage() {
                     const members = [
                         ...existingMembers
                     ];
-
 
                     const hasSelectedUser =
                         members.some(
@@ -2070,7 +2103,6 @@ function MessengerPage() {
                                 )
                         );
 
-
                     if (
                         !hasSelectedUser
                     ) {
@@ -2083,7 +2115,6 @@ function MessengerPage() {
                         });
                     }
 
-
                     const hasCurrentUser =
                         members.some(
                             (member) =>
@@ -2095,7 +2126,6 @@ function MessengerPage() {
                                     user?.id
                                 )
                         );
-
 
                     if (
                         !hasCurrentUser &&
@@ -2110,7 +2140,6 @@ function MessengerPage() {
                         });
                     }
 
-
                     chat = {
                         ...chat,
 
@@ -2119,7 +2148,6 @@ function MessengerPage() {
                         unreadCount:
                             0
                     };
-
 
                     setChats(
                         (previousChats) => {
@@ -2168,7 +2196,6 @@ function MessengerPage() {
                         }
                     );
 
-
                     await openChat(
                         chat
                     );
@@ -2180,7 +2207,7 @@ function MessengerPage() {
 
                     alert(
                         error.message ||
-                        "Не вдалося відкрити чат."
+                        "Не вдалося відправити запрошення."
                     );
                 }
             },
@@ -2190,7 +2217,6 @@ function MessengerPage() {
                 openChat
             ]
         );
-
 
     // ==========================================
     // GET CHAT NAME
