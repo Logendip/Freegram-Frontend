@@ -91,7 +91,7 @@ export function useSignalR({
         const connection =
             new HubConnectionBuilder()
                 .withUrl(
-                    `${API_BASE_URL}/chatHub`,
+                    `${API_BASE_URL}/hubs/chat`,
                     {
                         accessTokenFactory:
                             () => token
@@ -271,7 +271,7 @@ export function useSignalR({
             .then(() => {
                 console.log(
                     "SignalR connected:",
-                    `${API_BASE_URL}/chatHub`
+                    `${API_BASE_URL}/hubs/chat`
                 );
 
                 setConnectionState(
