@@ -43,10 +43,94 @@ function ChatHeader({
         useState(null);
 
 
+    // ==========================================
+    // SAFE MEMBERS
+    // ==========================================
+
     const safeMembers =
         Array.isArray(members)
             ? members
             : [];
+
+
+    // ==========================================
+    // GET MEMBER ID
+    // ==========================================
+
+    const getMemberId = (
+        member
+    ) => {
+        if (!member) {
+            return 0;
+        }
+
+        return Number(
+            member.id ??
+            member.Id ??
+            member.userId ??
+            member.UserId ??
+            member.user?.id ??
+            member.user?.Id ??
+            member.User?.id ??
+            member.User?.Id ??
+            0
+        );
+    };
+
+
+    // ==========================================
+    // GET MEMBER NICKNAME
+    // ==========================================
+
+    const getMemberNickname = (
+        member,
+        fallback = "Користувач"
+    ) => {
+        if (!member) {
+            return fallback;
+        }
+
+        const nickname =
+            member.nickname ??
+            member.Nickname ??
+            member.user?.nickname ??
+            member.user?.Nickname ??
+            member.User?.nickname ??
+            member.User?.Nickname;
+
+        if (
+            typeof nickname === "string" &&
+            nickname.trim()
+        ) {
+            return nickname;
+        }
+
+        return fallback;
+    };
+
+
+    // ==========================================
+    // NORMALIZE MEMBER
+    // ==========================================
+
+    const normalizeMember = (
+        member
+    ) => {
+        const id =
+            getMemberId(
+                member
+            );
+
+        const nickname =
+            getMemberNickname(
+                member
+            );
+
+        return {
+            id,
+            nickname
+        };
+    };
 
 
     // ==========================================
@@ -71,7 +155,9 @@ function ChatHeader({
             setTimeout(
                 async () => {
                     try {
-                        setSearchLoading(true);
+                        setSearchLoading(
+                            true
+                        );
 
                         const data =
                             await searchUsers(
@@ -93,11 +179,15 @@ function ChatHeader({
                                 error
                             );
 
-                            setSearchResults([]);
+                            setSearchResults(
+                                []
+                            );
                         }
                     } finally {
                         if (!cancelled) {
-                            setSearchLoading(false);
+                            setSearchLoading(
+                                false
+                            );
                         }
                     }
                 },
@@ -145,7 +235,9 @@ function ChatHeader({
                 : `Видалити всю переписку з "${name}"?`;
 
         const confirmed =
-            window.confirm(message);
+            window.confirm(
+                message
+            );
 
         if (!confirmed) {
             return;
@@ -182,10 +274,8 @@ function ChatHeader({
         }
 
         const memberId =
-            Number(
-                member.id ??
-                member.userId ??
-                member.UserId
+            getMemberId(
+                member
             );
 
         const currentId =
@@ -201,9 +291,10 @@ function ChatHeader({
         }
 
         const nickname =
-            member.nickname ??
-            member.Nickname ??
-            "цього користувача";
+            getMemberNickname(
+                member,
+                "цього користувача"
+            );
 
         const confirmed =
             window.confirm(
@@ -265,10 +356,8 @@ function ChatHeader({
         const alreadyMember =
             safeMembers.some(
                 (member) =>
-                    Number(
-                        member.id ??
-                        member.userId ??
-                        member.UserId
+                    getMemberId(
+                        member
                     ) === selectedUserId
             );
 
@@ -303,7 +392,9 @@ function ChatHeader({
                 "Не вдалося додати учасника."
             );
         } finally {
-            setAddingUserId(null);
+            setAddingUserId(
+                null
+            );
         }
     };
 
@@ -317,7 +408,10 @@ function ChatHeader({
             (value) => !value
         );
 
-        setShowAddMember(false);
+        setShowAddMember(
+            false
+        );
+
         setSearch("");
         setSearchResults([]);
     };
@@ -332,7 +426,10 @@ function ChatHeader({
             (value) => !value
         );
 
-        setShowMembers(false);
+        setShowMembers(
+            false
+        );
+
         setSearch("");
         setSearchResults([]);
     };
@@ -347,7 +444,8 @@ function ChatHeader({
                 alignItems: "center",
                 gap: "12px",
                 padding: "0 20px",
-                borderBottom: "1px solid #ddd",
+                borderBottom:
+                    "1px solid #ddd",
                 position: "relative",
                 background: "#fff",
                 zIndex: 20,
@@ -361,7 +459,9 @@ function ChatHeader({
 
             <button
                 type="button"
-                onClick={handleBack}
+                onClick={
+                    handleBack
+                }
                 aria-label="Назад до чатів"
                 className="mobile-back-button"
                 style={{
@@ -371,7 +471,8 @@ function ChatHeader({
                     minWidth: "40px",
                     border: "none",
                     borderRadius: "50%",
-                    background: "transparent",
+                    background:
+                        "transparent",
                     cursor: "pointer",
                     fontSize: "25px",
                     lineHeight: "1",
@@ -422,8 +523,10 @@ function ChatHeader({
                     style={{
                         fontWeight: "600",
                         overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        textOverflow:
+                            "ellipsis",
+                        whiteSpace:
+                            "nowrap",
                         fontSize: "15px"
                     }}
                 >
@@ -459,11 +562,18 @@ function ChatHeader({
                     type="button"
                     onClick={() => {
                         setShowMenu(
-                            (value) => !value
+                            (value) =>
+                                !value
                         );
 
-                        setShowMembers(false);
-                        setShowAddMember(false);
+                        setShowMembers(
+                            false
+                        );
+
+                        setShowAddMember(
+                            false
+                        );
+
                         setSearch("");
                         setSearchResults([]);
                     }}
@@ -473,7 +583,8 @@ function ChatHeader({
                         width: "40px",
                         height: "40px",
                         border: "none",
-                        borderRadius: "50%",
+                        borderRadius:
+                            "50%",
                         background:
                             showMenu
                                 ? "#f0f0f0"
@@ -492,21 +603,26 @@ function ChatHeader({
                 {showMenu && (
                     <div
                         style={{
-                            position: "absolute",
+                            position:
+                                "absolute",
                             top: "46px",
                             right: "0",
-                            width: isGroup
-                                ? "300px"
-                                : "220px",
+                            width:
+                                isGroup
+                                    ? "300px"
+                                    : "220px",
                             maxWidth:
                                 "calc(100vw - 24px)",
-                            background: "#fff",
+                            background:
+                                "#fff",
                             border:
                                 "1px solid #ddd",
-                            borderRadius: "10px",
+                            borderRadius:
+                                "10px",
                             boxShadow:
                                 "0 5px 20px rgba(0,0,0,0.15)",
-                            overflow: "hidden",
+                            overflow:
+                                "hidden",
                             zIndex: 100
                         }}
                     >
@@ -524,8 +640,10 @@ function ChatHeader({
                                         handleToggleMembers
                                     }
                                     style={{
-                                        width: "100%",
-                                        border: "none",
+                                        width:
+                                            "100%",
+                                        border:
+                                            "none",
                                         background:
                                             "transparent",
                                         padding:
@@ -558,7 +676,9 @@ function ChatHeader({
                                                 "12px"
                                         }}
                                     >
-                                        {safeMembers.length}
+                                        {
+                                            safeMembers.length
+                                        }
                                     </span>
                                 </button>
 
@@ -574,8 +694,10 @@ function ChatHeader({
                                             handleToggleAddMember
                                         }
                                         style={{
-                                            width: "100%",
-                                            border: "none",
+                                            width:
+                                                "100%",
+                                            border:
+                                                "none",
                                             borderTop:
                                                 "1px solid #eee",
                                             background:
@@ -615,7 +737,9 @@ function ChatHeader({
                                             value={
                                                 search
                                             }
-                                            onChange={(event) =>
+                                            onChange={(
+                                                event
+                                            ) =>
                                                 setSearch(
                                                     event.target.value
                                                 )
@@ -695,6 +819,10 @@ function ChatHeader({
                                                         const nickname =
                                                             result.nickname ??
                                                             result.Nickname ??
+                                                            result.user?.nickname ??
+                                                            result.user?.Nickname ??
+                                                            result.User?.nickname ??
+                                                            result.User?.Nickname ??
                                                             "Користувач";
 
                                                         const current =
@@ -708,10 +836,8 @@ function ChatHeader({
                                                                 (
                                                                     member
                                                                 ) =>
-                                                                    Number(
-                                                                        member.id ??
-                                                                        member.userId ??
-                                                                        member.UserId
+                                                                    getMemberId(
+                                                                        member
                                                                     ) ===
                                                                     resultId
                                                             );
@@ -811,7 +937,9 @@ function ChatHeader({
                                                                             "14px"
                                                                     }}
                                                                 >
-                                                                    {nickname}
+                                                                    {
+                                                                        nickname
+                                                                    }
                                                                 </span>
 
                                                                 <span
@@ -873,17 +1001,17 @@ function ChatHeader({
                                                     member,
                                                     index
                                                 ) => {
-                                                    const memberId =
-                                                        Number(
-                                                            member.id ??
-                                                            member.userId ??
-                                                            member.UserId
+
+                                                    const normalizedMember =
+                                                        normalizeMember(
+                                                            member
                                                         );
 
+                                                    const memberId =
+                                                        normalizedMember.id;
+
                                                     const nickname =
-                                                        member.nickname ??
-                                                        member.Nickname ??
-                                                        "Користувач";
+                                                        normalizedMember.nickname;
 
                                                     const isCurrentUser =
                                                         memberId ===
@@ -920,6 +1048,9 @@ function ChatHeader({
                                                                         : "none"
                                                             }}
                                                         >
+
+                                                            {/* AVATAR */}
+
                                                             <div
                                                                 style={{
                                                                     width:
@@ -952,6 +1083,8 @@ function ChatHeader({
                                                             </div>
 
 
+                                                            {/* NICKNAME */}
+
                                                             <div
                                                                 style={{
                                                                     flex:
@@ -974,7 +1107,9 @@ function ChatHeader({
                                                                             "nowrap"
                                                                     }}
                                                                 >
-                                                                    {nickname}
+                                                                    {
+                                                                        nickname
+                                                                    }
                                                                 </div>
 
                                                                 {isCurrentUser && (
@@ -994,6 +1129,8 @@ function ChatHeader({
                                                             </div>
 
 
+                                                            {/* CREATOR */}
+
                                                             {isCreator && (
                                                                 <span
                                                                     style={{
@@ -1009,6 +1146,8 @@ function ChatHeader({
                                                                 </span>
                                                             )}
 
+
+                                                            {/* REMOVE */}
 
                                                             {isGroupCreator &&
                                                                 !isCurrentUser &&
@@ -1061,8 +1200,10 @@ function ChatHeader({
                                             handleDeleteChat
                                         }
                                         style={{
-                                            width: "100%",
-                                            border: "none",
+                                            width:
+                                                "100%",
+                                            border:
+                                                "none",
                                             borderTop:
                                                 "1px solid #eee",
                                             background:
@@ -1082,6 +1223,7 @@ function ChatHeader({
                                         🗑️ Видалити групу
                                     </button>
                                 )}
+
                             </>
                         ) : (
 
@@ -1095,8 +1237,10 @@ function ChatHeader({
                                     handleDeleteChat
                                 }
                                 style={{
-                                    width: "100%",
-                                    border: "none",
+                                    width:
+                                        "100%",
+                                    border:
+                                        "none",
                                     background:
                                         "transparent",
                                     padding:
@@ -1138,6 +1282,7 @@ function ChatHeader({
                     }
                 `}
             </style>
+
         </header>
     );
 }
