@@ -1,84 +1,95 @@
+import ChatItem from "./ChatItem";
 
-function ChatItem({
-    chat,
-    name,
-    selected,
-    onClick
+function ChatList({
+    chats,
+    selectedChat,
+    getChatName,
+    onSelectChat
 }) {
+    if (chats.length === 0) {
+        return (
+            <div
+                style={{
+                    color: "#9ca3af",
+                    padding: "18px 10px",
+                    textAlign: "center",
+                    fontSize: "13px",
+                    animation:
+                        "freegramFadeIn 180ms ease-out"
+                }}
+            >
+                Чатів поки немає.
+            </div>
+        );
+    }
+
     return (
-        <button
-            onClick={onClick}
+        <div
+            className="freegram-chat-list"
             style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "12px",
-                marginBottom: "4px",
-                border: "none",
-                borderRadius: "8px",
-                background: selected
-                    ? "#e9e9e9"
-                    : "transparent",
-                cursor: "pointer",
-                textAlign: "left"
+                animation:
+                    "freegramChatListIn 220ms ease-out"
             }}
         >
-            {/* Avatar */}
-
-            <div
-                style={{
-                    width: "48px",
-                    height: "48px",
-                    minWidth: "48px",
-                    borderRadius: "50%",
-                    background: "#d6d6d6",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: "bold",
-                    fontSize: "18px"
-                }}
-            >
-                {name
-                    .charAt(0)
-                    .toUpperCase()}
-            </div>
-
-            {/* Chat information */}
-
-            <div
-                style={{
-                    minWidth: 0,
-                    flex: 1
-                }}
-            >
+            {chats.map((chat, index) => (
                 <div
+                    key={chat.id}
+                    className="freegram-chat-list-item"
                     style={{
-                        fontWeight: "600",
-                        marginBottom: "4px"
+                        animation:
+                            "freegramChatItemIn 220ms ease-out both",
+                        animationDelay:
+                            `${Math.min(index * 25, 150)}ms`
                     }}
                 >
-                    {name}
+                    <ChatItem
+                        chat={chat}
+                        name={getChatName(chat)}
+                        selected={
+                            selectedChat?.id ===
+                            chat.id
+                        }
+                        onClick={() =>
+                            onSelectChat(chat)
+                        }
+                    />
                 </div>
+            ))}
 
-                <div
-                    style={{
-                        fontSize: "13px",
-                        color: "#777",
-                        overflow: "hidden",
-                        textOverflow:
-                            "ellipsis",
-                        whiteSpace: "nowrap"
-                    }}
-                >
-                    {chat.isGroup
-                        ? "Група"
-                        : "Приватний чат"}
-                </div>
-            </div>
-        </button>
+            <style>
+                {`
+                    @keyframes freegramChatListIn {
+                        from {
+                            opacity: 0.7;
+                        }
+
+                        to {
+                            opacity: 1;
+                        }
+                    }
+
+                    @keyframes freegramChatItemIn {
+                        from {
+                            opacity: 0;
+                            transform: translateY(5px);
+                        }
+
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+
+                    @media (prefers-reduced-motion: reduce) {
+                        .freegram-chat-list,
+                        .freegram-chat-list-item {
+                            animation: none !important;
+                        }
+                    }
+                `}
+            </style>
+        </div>
     );
 }
 
-export default ChatItem;
+export default ChatList;
