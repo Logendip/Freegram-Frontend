@@ -9,6 +9,7 @@ import {
     getChats,
     getMessages,
     createPrivateChat,
+    createGroupChat,
     deleteChat,
     getChatRequests,
     acceptChatRequest,
@@ -141,19 +142,6 @@ function MessengerPage() {
                 // ==================================
                 // UPDATE UNREAD COUNT
                 // ==================================
-
-                /*
-                 * Якщо повідомлення:
-                 *
-                 * 1. наше власне -> нічого не робимо;
-                 *
-                 * 2. прийшло у відкритий чат ->
-                 *    воно буде одразу позначене
-                 *    як прочитане;
-                 *
-                 * 3. прийшло в інший чат ->
-                 *    збільшуємо unreadCount.
-                 */
 
                 if (
                     isOwnMessage ||
@@ -412,6 +400,105 @@ function MessengerPage() {
 
 
     // ==========================================
+    // GROUP CHAT CREATED
+    // ==========================================
+
+    const handleGroupChatCreated =
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
+                }
+
+                const groupId =
+                    Number(
+                        data.id ??
+                        data.Id
+                    );
+
+                if (!groupId) {
+                    return;
+                }
+
+                const members =
+                    Array.isArray(
+                        data.members
+                    )
+                        ? data.members
+                        : Array.isArray(
+                            data.Members
+                        )
+                            ? data.Members
+                            : [];
+
+                const groupChat = {
+                    ...data,
+
+                    id:
+                        groupId,
+
+                    name:
+                        data.name ??
+                        data.Name ??
+                        "Група",
+
+                    isGroup:
+                        true,
+
+                    members,
+
+                    unreadCount:
+                        0
+                };
+
+                setChats(
+                    (previousChats) => {
+                        const safeChats =
+                            Array.isArray(
+                                previousChats
+                            )
+                                ? previousChats
+                                : [];
+
+                        const exists =
+                            safeChats.some(
+                                (chat) =>
+                                    Number(
+                                        chat.id
+                                    ) ===
+                                    groupId
+                            );
+
+                        if (exists) {
+                            return safeChats.map(
+                                (chat) =>
+                                    Number(
+                                        chat.id
+                                    ) ===
+                                    groupId
+                                        ? {
+                                            ...chat,
+                                            ...groupChat,
+                                            unreadCount:
+                                                chat.unreadCount ??
+                                                0
+                                        }
+                                        : chat
+                            );
+                        }
+
+                        return [
+                            ...safeChats,
+                            groupChat
+                        ];
+                    }
+                );
+            },
+            []
+        );
+
+
+    // ==========================================
     // SIGNALR
     // ==========================================
 
@@ -444,7 +531,10 @@ function MessengerPage() {
             handleChatRequestCreated,
 
         onChatRequestAccepted:
-            null
+            null,
+
+        onGroupChatCreated:
+            handleGroupChatCreated
     });
 
 
@@ -758,6 +848,114 @@ function MessengerPage() {
                 selectedChat,
                 joinChat,
                 leaveChat
+            ]
+        );
+
+
+    // ==========================================
+    // GROUP CREATED FROM SIDEBAR
+    // ==========================================
+
+    const handleGroupCreated =
+        useCallback(
+            async (createdChat) => {
+                if (
+                    !createdChat ||
+                    !token
+                ) {
+                    return;
+                }
+
+                const groupId =
+                    Number(
+                        createdChat.id ??
+                        createdChat.Id
+                    );
+
+                if (!groupId) {
+                    return;
+                }
+
+                const members =
+                    Array.isArray(
+                        createdChat.members
+                    )
+                        ? createdChat.members
+                        : Array.isArray(
+                            createdChat.Members
+                        )
+                            ? createdChat.Members
+                            : [];
+
+                const groupChat = {
+                    ...createdChat,
+
+                    id:
+                        groupId,
+
+                    name:
+                        createdChat.name ??
+                        createdChat.Name ??
+                        "Група",
+
+                    isGroup:
+                        true,
+
+                    members,
+
+                    unreadCount:
+                        0
+                };
+
+                setChats(
+                    (previousChats) => {
+                        const safeChats =
+                            Array.isArray(
+                                previousChats
+                            )
+                                ? previousChats
+                                : [];
+
+                        const exists =
+                            safeChats.some(
+                                (chat) =>
+                                    Number(
+                                        chat.id
+                                    ) ===
+                                    groupId
+                            );
+
+                        if (exists) {
+                            return safeChats.map(
+                                (chat) =>
+                                    Number(
+                                        chat.id
+                                    ) ===
+                                    groupId
+                                        ? {
+                                            ...chat,
+                                            ...groupChat,
+                                            unreadCount:
+                                                0
+                                        }
+                                        : chat
+                            );
+                        }
+
+                        return [
+                            ...safeChats,
+                            groupChat
+                        ];
+                    }
+                );
+
+                await openChat(
+                    groupChat
+                );
+            },
+            [
+                token,
+                openChat
             ]
         );
 
@@ -1471,6 +1669,9 @@ function MessengerPage() {
                     }
                     onSelectUser={
                         handleSelectUser
+                    }
+                    onGroupCreated={
+                        handleGroupCreated
                     }
                 />
             }

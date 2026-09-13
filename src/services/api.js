@@ -87,6 +87,31 @@ export async function createPrivateChat(
     );
 }
 
+// ==========================================
+// CREATE GROUP CHAT
+// ==========================================
+
+export async function createGroupChat(
+    token,
+    name,
+    userIds
+) {
+    return request(
+        "/api/Chats/group",
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name,
+                userIds
+            })
+        }
+    );
+}
+
 export async function deleteChat(
     token,
     chatId

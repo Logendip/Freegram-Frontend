@@ -6,7 +6,8 @@ import {
 import ChatList from "./ChatList";
 
 import {
-    searchUsers
+    searchUsers,
+    createGroupChat
 } from "../../services/api";
 
 
@@ -17,7 +18,8 @@ function ChatSidebar({
     onSelectChat,
     token,
     currentUserId,
-    onSelectUser
+    onSelectUser,
+    onGroupCreated
 }) {
     const [search, setSearch] =
         useState("");
@@ -29,6 +31,33 @@ function ChatSidebar({
         useState(false);
 
     const [searchError, setSearchError] =
+        useState("");
+
+    const [showGroupModal, setShowGroupModal] =
+        useState(false);
+
+    const [groupName, setGroupName] =
+        useState("");
+
+    const [groupSearch, setGroupSearch] =
+        useState("");
+
+    const [groupUsers, setGroupUsers] =
+        useState([]);
+
+    const [selectedUsers, setSelectedUsers] =
+        useState([]);
+
+    const [groupSearchLoading, setGroupSearchLoading] =
+        useState(false);
+
+    const [groupSearchError, setGroupSearchError] =
+        useState("");
+
+    const [groupCreating, setGroupCreating] =
+        useState(false);
+
+    const [groupCreateError, setGroupCreateError] =
         useState("");
 
 
@@ -136,8 +165,283 @@ function ChatSidebar({
     ]);
 
 
+    // ==========================================
+    // SEARCH USERS FOR GROUP
+    // ==========================================
+
+    useEffect(() => {
+        if (!showGroupModal) {
+            return;
+        }
+
+        const query =
+            groupSearch.trim();
+
+        if (!query) {
+            setGroupUsers([]);
+            setGroupSearchError("");
+            setGroupSearchLoading(false);
+
+            return;
+        }
+
+        const timeoutId =
+            setTimeout(
+                async () => {
+                    try {
+                        setGroupSearchLoading(
+                            true
+                        );
+
+                        setGroupSearchError("");
+
+                        const result =
+                            await searchUsers(
+                                token,
+                                query
+                            );
+
+                        const safeUsers =
+                            Array.isArray(result)
+                                ? result
+                                : [];
+
+                        const filteredUsers =
+                            safeUsers.filter(
+                                (foundUser) => {
+                                    const userId =
+                                        Number(
+                                            foundUser.id
+                                        );
+
+                                    if (
+                                        userId ===
+                                        Number(
+                                            currentUserId
+                                        )
+                                    ) {
+                                        return false;
+                                    }
+
+                                    return true;
+                                }
+                            );
+
+                        setGroupUsers(
+                            filteredUsers
+                        );
+                    } catch (error) {
+                        console.error(
+                            "Failed to search group users:",
+                            error
+                        );
+
+                        setGroupUsers([]);
+
+                        setGroupSearchError(
+                            "Не вдалося виконати пошук."
+                        );
+                    } finally {
+                        setGroupSearchLoading(
+                            false
+                        );
+                    }
+                },
+                300
+            );
+
+        return () =>
+            clearTimeout(timeoutId);
+    }, [
+        groupSearch,
+        token,
+        currentUserId,
+        showGroupModal
+    ]);
+
+
+    // ==========================================
+    // OPEN GROUP MODAL
+    // ==========================================
+
+    const openGroupModal =
+        () => {
+            setShowGroupModal(true);
+
+            setGroupName("");
+            setGroupSearch("");
+            setGroupUsers([]);
+            setSelectedUsers([]);
+            setGroupSearchError("");
+            setGroupCreateError("");
+        };
+
+
+    // ==========================================
+    // CLOSE GROUP MODAL
+    // ==========================================
+
+    const closeGroupModal =
+        () => {
+            if (groupCreating) {
+                return;
+            }
+
+            setShowGroupModal(false);
+
+            setGroupName("");
+            setGroupSearch("");
+            setGroupUsers([]);
+            setSelectedUsers([]);
+            setGroupSearchError("");
+            setGroupCreateError("");
+        };
+
+
+    // ==========================================
+    // TOGGLE GROUP USER
+    // ==========================================
+
+    const toggleGroupUser =
+        (foundUser) => {
+            if (!foundUser) {
+                return;
+            }
+
+            const userId =
+                Number(
+                    foundUser.id
+                );
+
+            setSelectedUsers(
+                (previousUsers) => {
+                    const exists =
+                        previousUsers.some(
+                            (user) =>
+                                Number(
+                                    user.id
+                                ) ===
+                                userId
+                        );
+
+                    if (exists) {
+                        return previousUsers.filter(
+                            (user) =>
+                                Number(
+                                    user.id
+                                ) !==
+                                userId
+                        );
+                    }
+
+                    return [
+                        ...previousUsers,
+                        foundUser
+                    ];
+                }
+            );
+        };
+
+
+    // ==========================================
+    // CREATE GROUP
+    // ==========================================
+
+    const handleCreateGroup =
+        async () => {
+            const trimmedName =
+                groupName.trim();
+
+            if (!trimmedName) {
+                setGroupCreateError(
+                    "Введіть назву групи."
+                );
+
+                return;
+            }
+
+            if (
+                selectedUsers.length === 0
+            ) {
+                setGroupCreateError(
+                    "Оберіть хоча б одного учасника."
+                );
+
+                return;
+            }
+
+            if (!token) {
+                setGroupCreateError(
+                    "Користувач не авторизований."
+                );
+
+                return;
+            }
+
+            try {
+                setGroupCreating(true);
+                setGroupCreateError("");
+
+                const userIds =
+                    selectedUsers.map(
+                        (selectedUser) =>
+                            Number(
+                                selectedUser.id
+                            )
+                    );
+
+                const result =
+                    await createGroupChat(
+                        token,
+                        trimmedName,
+                        userIds
+                    );
+
+                const createdChat =
+                    result?.chat;
+
+                if (!createdChat) {
+                    throw new Error(
+                        "Групу не було створено."
+                    );
+                }
+
+                setShowGroupModal(false);
+
+                setGroupName("");
+                setGroupSearch("");
+                setGroupUsers([]);
+                setSelectedUsers([]);
+                setGroupSearchError("");
+                setGroupCreateError("");
+
+                if (onGroupCreated) {
+                    await onGroupCreated(
+                        createdChat
+                    );
+                }
+            } catch (error) {
+                console.error(
+                    "Failed to create group:",
+                    error
+                );
+
+                setGroupCreateError(
+                    error.message ||
+                    "Не вдалося створити групу."
+                );
+            } finally {
+                setGroupCreating(false);
+            }
+        };
+
+
     const hasSearch =
         search.trim().length > 0;
+
+
+    const hasGroupSearch =
+        groupSearch.trim().length > 0;
 
 
     // ==========================================
@@ -160,11 +464,6 @@ function ChatSidebar({
                 overflow: "hidden"
             }}
         >
-
-            {/* ======================================
-                HEADER
-            ====================================== */}
-
             <div
                 style={{
                     padding:
@@ -195,32 +494,61 @@ function ChatSidebar({
                         Чати
                     </h2>
 
-                    <div
+                    <button
+                        type="button"
+                        onClick={
+                            openGroupModal
+                        }
+                        title="Створити групу"
                         style={{
-                            width: "32px",
-                            height: "32px",
-                            borderRadius: "10px",
+                            width: "34px",
+                            height: "34px",
+                            borderRadius:
+                                "10px",
+                            border: "none",
                             display: "flex",
-                            alignItems: "center",
+                            alignItems:
+                                "center",
                             justifyContent:
                                 "center",
                             background:
                                 "linear-gradient(135deg, #7c3aed, #6366f1)",
-                            color: "#ffffff",
-                            fontSize: "15px",
-                            fontWeight: "700",
+                            color:
+                                "#ffffff",
+                            fontSize:
+                                "23px",
+                            fontWeight:
+                                "400",
+                            lineHeight: 1,
+                            cursor:
+                                "pointer",
                             boxShadow:
-                                "0 4px 10px rgba(99,102,241,0.22)"
+                                "0 4px 10px rgba(99,102,241,0.22)",
+                            transition:
+                                "transform 0.15s ease, box-shadow 0.15s ease"
+                        }}
+                        onMouseEnter={(
+                            event
+                        ) => {
+                            event.currentTarget.style.transform =
+                                "translateY(-1px)";
+
+                            event.currentTarget.style.boxShadow =
+                                "0 6px 14px rgba(99,102,241,0.28)";
+                        }}
+                        onMouseLeave={(
+                            event
+                        ) => {
+                            event.currentTarget.style.transform =
+                                "translateY(0)";
+
+                            event.currentTarget.style.boxShadow =
+                                "0 4px 10px rgba(99,102,241,0.22)";
                         }}
                     >
-                        F
-                    </div>
+                        +
+                    </button>
                 </div>
-
-
-                {/* ==================================
-                    SEARCH
-                ================================== */}
 
                 <div
                     style={{
@@ -296,11 +624,6 @@ function ChatSidebar({
                 </div>
             </div>
 
-
-            {/* ======================================
-                CONTENT
-            ====================================== */}
-
             <div
                 className="freegram-sidebar-content"
                 style={{
@@ -314,13 +637,8 @@ function ChatSidebar({
                         "border-box"
                 }}
             >
-
                 {hasSearch ? (
                     <>
-                        {/* ==========================
-                            USERS TITLE
-                        ========================== */}
-
                         <div
                             style={{
                                 padding:
@@ -340,11 +658,6 @@ function ChatSidebar({
                             Користувачі
                         </div>
 
-
-                        {/* ==========================
-                            LOADING
-                        ========================== */}
-
                         {searchLoading && (
                             <div
                                 style={{
@@ -361,11 +674,6 @@ function ChatSidebar({
                                 Пошук...
                             </div>
                         )}
-
-
-                        {/* ==========================
-                            ERROR
-                        ========================== */}
 
                         {!searchLoading &&
                             searchError && (
@@ -391,11 +699,6 @@ function ChatSidebar({
                                 </div>
                             )}
 
-
-                        {/* ==========================
-                            NO USERS
-                        ========================== */}
-
                         {!searchLoading &&
                             !searchError &&
                             users.length === 0 && (
@@ -415,11 +718,6 @@ function ChatSidebar({
                                     знайдено.
                                 </div>
                             )}
-
-
-                        {/* ==========================
-                            USERS
-                        ========================== */}
 
                         {!searchLoading &&
                             users.map(
@@ -476,9 +774,6 @@ function ChatSidebar({
                                                 "transparent";
                                         }}
                                     >
-
-                                        {/* Avatar */}
-
                                         <div
                                             style={{
                                                 width:
@@ -514,9 +809,6 @@ function ChatSidebar({
                                                 )
                                                 .toUpperCase()}
                                         </div>
-
-
-                                        {/* User info */}
 
                                         <div
                                             style={{
@@ -576,15 +868,9 @@ function ChatSidebar({
                                         >
                                             ›
                                         </span>
-
                                     </button>
                                 )
                             )}
-
-
-                        {/* ==========================
-                            CHATS TITLE
-                        ========================== */}
 
                         <div
                             style={{
@@ -608,11 +894,6 @@ function ChatSidebar({
                         >
                             Ваші чати
                         </div>
-
-
-                        {/* ==========================
-                            FILTERED CHATS
-                        ========================== */}
 
                         {filteredChats.length > 0 ? (
                             <ChatList
@@ -662,13 +943,822 @@ function ChatSidebar({
                         }
                     />
                 )}
-
             </div>
 
 
-            {/* ======================================
-                STYLES
-            ====================================== */}
+            {/* ==================================
+                CREATE GROUP MODAL
+            ================================== */}
+
+            {showGroupModal && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 2000,
+                        display: "flex",
+                        alignItems:
+                            "center",
+                        justifyContent:
+                            "center",
+                        padding: "20px",
+                        background:
+                            "rgba(15,23,42,0.45)",
+                        backdropFilter:
+                            "blur(4px)"
+                    }}
+                    onMouseDown={(
+                        event
+                    ) => {
+                        if (
+                            event.target ===
+                            event.currentTarget
+                        ) {
+                            closeGroupModal();
+                        }
+                    }}
+                >
+                    <div
+                        style={{
+                            width:
+                                "min(460px, 100%)",
+                            maxHeight:
+                                "min(700px, calc(100vh - 40px))",
+                            display:
+                                "flex",
+                            flexDirection:
+                                "column",
+                            background:
+                                "#ffffff",
+                            borderRadius:
+                                "18px",
+                            boxShadow:
+                                "0 20px 60px rgba(0,0,0,0.22)",
+                            overflow:
+                                "hidden"
+                        }}
+                    >
+                        {/* HEADER */}
+
+                        <div
+                            style={{
+                                display:
+                                    "flex",
+                                alignItems:
+                                    "center",
+                                justifyContent:
+                                    "space-between",
+                                padding:
+                                    "18px 20px",
+                                borderBottom:
+                                    "1px solid #f0f0f0"
+                            }}
+                        >
+                            <div>
+                                <div
+                                    style={{
+                                        fontSize:
+                                            "19px",
+                                        fontWeight:
+                                            "700",
+                                        color:
+                                            "#1f2937"
+                                    }}
+                                >
+                                    Створити групу
+                                </div>
+
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "4px",
+                                        fontSize:
+                                            "12px",
+                                        color:
+                                            "#9ca3af"
+                                    }}
+                                >
+                                    Додайте учасників
+                                    до нового чату
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={
+                                    closeGroupModal
+                                }
+                                disabled={
+                                    groupCreating
+                                }
+                                style={{
+                                    width:
+                                        "34px",
+                                    height:
+                                        "34px",
+                                    border:
+                                        "none",
+                                    borderRadius:
+                                        "10px",
+                                    background:
+                                        "#f3f4f6",
+                                    color:
+                                        "#6b7280",
+                                    fontSize:
+                                        "22px",
+                                    lineHeight:
+                                        1,
+                                    cursor:
+                                        groupCreating
+                                            ? "default"
+                                            : "pointer"
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+
+                        {/* CONTENT */}
+
+                        <div
+                            style={{
+                                padding:
+                                    "18px 20px",
+                                overflowY:
+                                    "auto",
+                                flex: 1
+                            }}
+                        >
+                            {/* GROUP NAME */}
+
+                            <label
+                                style={{
+                                    display:
+                                        "block",
+                                    marginBottom:
+                                        "7px",
+                                    fontSize:
+                                        "13px",
+                                    fontWeight:
+                                        "600",
+                                    color:
+                                        "#374151"
+                                }}
+                            >
+                                Назва групи
+                            </label>
+
+                            <input
+                                type="text"
+                                value={
+                                    groupName
+                                }
+                                maxLength={
+                                    100
+                                }
+                                disabled={
+                                    groupCreating
+                                }
+                                onChange={(
+                                    event
+                                ) =>
+                                    setGroupName(
+                                        event
+                                            .target
+                                            .value
+                                    )
+                                }
+                                placeholder="Наприклад, Команда"
+                                style={{
+                                    width:
+                                        "100%",
+                                    height:
+                                        "44px",
+                                    boxSizing:
+                                        "border-box",
+                                    padding:
+                                        "0 13px",
+                                    border:
+                                        "1px solid #e5e7eb",
+                                    borderRadius:
+                                        "11px",
+                                    outline:
+                                        "none",
+                                    background:
+                                        "#f9fafb",
+                                    color:
+                                        "#1f2937",
+                                    fontSize:
+                                        "14px"
+                                }}
+                            />
+
+
+                            {/* SELECTED USERS */}
+
+                            {selectedUsers.length >
+                                0 && (
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "16px"
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            marginBottom:
+                                                "8px",
+                                            fontSize:
+                                                "13px",
+                                            fontWeight:
+                                                "600",
+                                            color:
+                                                "#374151"
+                                        }}
+                                    >
+                                        Учасники (
+                                        {
+                                            selectedUsers.length
+                                        }
+                                        )
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            display:
+                                                "flex",
+                                            flexWrap:
+                                                "wrap",
+                                            gap:
+                                                "7px"
+                                        }}
+                                    >
+                                        {selectedUsers.map(
+                                            (
+                                                selectedUser
+                                            ) => (
+                                                <button
+                                                    key={
+                                                        selectedUser.id
+                                                    }
+                                                    type="button"
+                                                    disabled={
+                                                        groupCreating
+                                                    }
+                                                    onClick={() =>
+                                                        toggleGroupUser(
+                                                            selectedUser
+                                                        )
+                                                    }
+                                                    style={{
+                                                        display:
+                                                            "flex",
+                                                        alignItems:
+                                                            "center",
+                                                        gap:
+                                                            "6px",
+                                                        padding:
+                                                            "6px 9px 6px 7px",
+                                                        border:
+                                                            "none",
+                                                        borderRadius:
+                                                            "20px",
+                                                        background:
+                                                            "#ede9fe",
+                                                        color:
+                                                            "#6d28d9",
+                                                        cursor:
+                                                            groupCreating
+                                                                ? "default"
+                                                                : "pointer",
+                                                        fontSize:
+                                                            "12px",
+                                                        fontWeight:
+                                                            "600"
+                                                    }}
+                                                >
+                                                    <span
+                                                        style={{
+                                                            width:
+                                                                "24px",
+                                                            height:
+                                                                "24px",
+                                                            borderRadius:
+                                                                "50%",
+                                                            display:
+                                                                "flex",
+                                                            alignItems:
+                                                                "center",
+                                                            justifyContent:
+                                                                "center",
+                                                            background:
+                                                                "#8b5cf6",
+                                                            color:
+                                                                "#ffffff",
+                                                            fontSize:
+                                                                "11px"
+                                                        }}
+                                                    >
+                                                        {selectedUser
+                                                            .nickname
+                                                            ?.charAt(
+                                                                0
+                                                            )
+                                                            .toUpperCase()}
+                                                    </span>
+
+                                                    {
+                                                        selectedUser.nickname
+                                                    }
+
+                                                    <span
+                                                        style={{
+                                                            fontSize:
+                                                                "15px",
+                                                            opacity:
+                                                                0.65
+                                                        }}
+                                                    >
+                                                        ×
+                                                    </span>
+                                                </button>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+
+                            {/* USER SEARCH */}
+
+                            <div
+                                style={{
+                                    marginTop:
+                                        "18px"
+                                }}
+                            >
+                                <label
+                                    style={{
+                                        display:
+                                            "block",
+                                        marginBottom:
+                                            "7px",
+                                        fontSize:
+                                            "13px",
+                                        fontWeight:
+                                            "600",
+                                        color:
+                                            "#374151"
+                                    }}
+                                >
+                                    Додати учасників
+                                </label>
+
+                                <div
+                                    style={{
+                                        position:
+                                            "relative"
+                                    }}
+                                >
+                                    <span
+                                        style={{
+                                            position:
+                                                "absolute",
+                                            left:
+                                                "13px",
+                                            top:
+                                                "50%",
+                                            transform:
+                                                "translateY(-50%)",
+                                            color:
+                                                "#9ca3af",
+                                            fontSize:
+                                                "14px",
+                                            pointerEvents:
+                                                "none"
+                                        }}
+                                    >
+                                        🔍
+                                    </span>
+
+                                    <input
+                                        type="text"
+                                        value={
+                                            groupSearch
+                                        }
+                                        disabled={
+                                            groupCreating
+                                        }
+                                        onChange={(
+                                            event
+                                        ) =>
+                                            setGroupSearch(
+                                                event
+                                                    .target
+                                                    .value
+                                            )
+                                        }
+                                        placeholder="Пошук користувача"
+                                        style={{
+                                            width:
+                                                "100%",
+                                            height:
+                                                "42px",
+                                            boxSizing:
+                                                "border-box",
+                                            padding:
+                                                "0 13px 0 37px",
+                                            border:
+                                                "1px solid #e5e7eb",
+                                            borderRadius:
+                                                "11px",
+                                            outline:
+                                                "none",
+                                            background:
+                                                "#f9fafb",
+                                            color:
+                                                "#1f2937",
+                                            fontSize:
+                                                "14px"
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+
+                            {/* SEARCH RESULTS */}
+
+                            {hasGroupSearch && (
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "8px"
+                                    }}
+                                >
+                                    {groupSearchLoading && (
+                                        <div
+                                            style={{
+                                                padding:
+                                                    "18px",
+                                                textAlign:
+                                                    "center",
+                                                color:
+                                                    "#9ca3af",
+                                                fontSize:
+                                                    "13px"
+                                            }}
+                                        >
+                                            Пошук...
+                                        </div>
+                                    )}
+
+                                    {!groupSearchLoading &&
+                                        groupSearchError && (
+                                            <div
+                                                style={{
+                                                    padding:
+                                                        "10px",
+                                                    borderRadius:
+                                                        "9px",
+                                                    background:
+                                                        "#fef2f2",
+                                                    color:
+                                                        "#dc2626",
+                                                    fontSize:
+                                                        "13px"
+                                                }}
+                                            >
+                                                {
+                                                    groupSearchError
+                                                }
+                                            </div>
+                                        )}
+
+                                    {!groupSearchLoading &&
+                                        !groupSearchError &&
+                                        groupUsers.length ===
+                                            0 && (
+                                            <div
+                                                style={{
+                                                    padding:
+                                                        "18px",
+                                                    textAlign:
+                                                        "center",
+                                                    color:
+                                                        "#9ca3af",
+                                                    fontSize:
+                                                        "13px"
+                                                }}
+                                            >
+                                                Користувачів
+                                                не
+                                                знайдено.
+                                            </div>
+                                        )}
+
+                                    {!groupSearchLoading &&
+                                        !groupSearchError &&
+                                        groupUsers.map(
+                                            (
+                                                foundUser
+                                            ) => {
+                                                const isSelected =
+                                                    selectedUsers.some(
+                                                        (
+                                                            selectedUser
+                                                        ) =>
+                                                            Number(
+                                                                selectedUser.id
+                                                            ) ===
+                                                            Number(
+                                                                foundUser.id
+                                                            )
+                                                    );
+
+                                                return (
+                                                    <button
+                                                        key={
+                                                            foundUser.id
+                                                        }
+                                                        type="button"
+                                                        disabled={
+                                                            groupCreating
+                                                        }
+                                                        onClick={() =>
+                                                            toggleGroupUser(
+                                                                foundUser
+                                                            )
+                                                        }
+                                                        style={{
+                                                            width:
+                                                                "100%",
+                                                            display:
+                                                                "flex",
+                                                            alignItems:
+                                                                "center",
+                                                            gap:
+                                                                "10px",
+                                                            padding:
+                                                                "9px 8px",
+                                                            marginBottom:
+                                                                "3px",
+                                                            border:
+                                                                "none",
+                                                            borderRadius:
+                                                                "10px",
+                                                            background:
+                                                                isSelected
+                                                                    ? "#f3f0ff"
+                                                                    : "transparent",
+                                                            cursor:
+                                                                groupCreating
+                                                                    ? "default"
+                                                                    : "pointer",
+                                                            textAlign:
+                                                                "left"
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                width:
+                                                                    "40px",
+                                                                height:
+                                                                    "40px",
+                                                                minWidth:
+                                                                    "40px",
+                                                                borderRadius:
+                                                                    "50%",
+                                                                display:
+                                                                    "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                justifyContent:
+                                                                    "center",
+                                                                background:
+                                                                    isSelected
+                                                                        ? "#7c3aed"
+                                                                        : "linear-gradient(135deg, #8b5cf6, #6366f1)",
+                                                                color:
+                                                                    "#ffffff",
+                                                                fontWeight:
+                                                                    "700",
+                                                                fontSize:
+                                                                    "15px"
+                                                            }}
+                                                        >
+                                                            {foundUser
+                                                                .nickname
+                                                                ?.charAt(
+                                                                    0
+                                                                )
+                                                                .toUpperCase()}
+                                                        </div>
+
+                                                        <div
+                                                            style={{
+                                                                flex:
+                                                                    1,
+                                                                minWidth:
+                                                                    0
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    fontSize:
+                                                                        "14px",
+                                                                    fontWeight:
+                                                                        "600",
+                                                                    color:
+                                                                        "#1f2937",
+                                                                    overflow:
+                                                                        "hidden",
+                                                                    textOverflow:
+                                                                        "ellipsis",
+                                                                    whiteSpace:
+                                                                        "nowrap"
+                                                                }}
+                                                            >
+                                                                {
+                                                                    foundUser.nickname
+                                                                }
+                                                            </div>
+
+                                                            <div
+                                                                style={{
+                                                                    marginTop:
+                                                                        "3px",
+                                                                    fontSize:
+                                                                        "11px",
+                                                                    color:
+                                                                        "#9ca3af"
+                                                                }}
+                                                            >
+                                                                {isSelected
+                                                                    ? "Вибрано"
+                                                                    : "Додати до групи"}
+                                                            </div>
+                                                        </div>
+
+                                                        <div
+                                                            style={{
+                                                                width:
+                                                                    "22px",
+                                                                height:
+                                                                    "22px",
+                                                                borderRadius:
+                                                                    "6px",
+                                                                border:
+                                                                    isSelected
+                                                                        ? "none"
+                                                                        : "2px solid #d1d5db",
+                                                                background:
+                                                                    isSelected
+                                                                        ? "#7c3aed"
+                                                                        : "#ffffff",
+                                                                display:
+                                                                    "flex",
+                                                                alignItems:
+                                                                    "center",
+                                                                justifyContent:
+                                                                    "center",
+                                                                color:
+                                                                    "#ffffff",
+                                                                fontSize:
+                                                                    "14px",
+                                                                fontWeight:
+                                                                    "700"
+                                                            }}
+                                                        >
+                                                            {isSelected
+                                                                ? "✓"
+                                                                : ""}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            }
+                                        )}
+                                </div>
+                            )}
+
+                            {/* ERROR */}
+
+                            {groupCreateError && (
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "14px",
+                                        padding:
+                                            "11px 12px",
+                                        borderRadius:
+                                            "9px",
+                                        background:
+                                            "#fef2f2",
+                                        color:
+                                            "#dc2626",
+                                        fontSize:
+                                            "13px"
+                                    }}
+                                >
+                                    {
+                                        groupCreateError
+                                    }
+                                </div>
+                            )}
+                        </div>
+
+
+                        {/* FOOTER */}
+
+                        <div
+                            style={{
+                                display:
+                                    "flex",
+                                gap: "9px",
+                                padding:
+                                    "14px 20px",
+                                borderTop:
+                                    "1px solid #f0f0f0",
+                                background:
+                                    "#ffffff"
+                            }}
+                        >
+                            <button
+                                type="button"
+                                onClick={
+                                    closeGroupModal
+                                }
+                                disabled={
+                                    groupCreating
+                                }
+                                style={{
+                                    flex: 1,
+                                    height:
+                                        "42px",
+                                    border:
+                                        "1px solid #e5e7eb",
+                                    borderRadius:
+                                        "10px",
+                                    background:
+                                        "#ffffff",
+                                    color:
+                                        "#374151",
+                                    fontSize:
+                                        "14px",
+                                    fontWeight:
+                                        "600",
+                                    cursor:
+                                        groupCreating
+                                            ? "default"
+                                            : "pointer"
+                                }}
+                            >
+                                Скасувати
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={
+                                    handleCreateGroup
+                                }
+                                disabled={
+                                    groupCreating
+                                }
+                                style={{
+                                    flex: 1,
+                                    height:
+                                        "42px",
+                                    border:
+                                        "none",
+                                    borderRadius:
+                                        "10px",
+                                    background:
+                                        groupCreating
+                                            ? "#c4b5fd"
+                                            : "linear-gradient(135deg, #7c3aed, #6366f1)",
+                                    color:
+                                        "#ffffff",
+                                    fontSize:
+                                        "14px",
+                                    fontWeight:
+                                        "600",
+                                    cursor:
+                                        groupCreating
+                                            ? "default"
+                                            : "pointer",
+                                    boxShadow:
+                                        "0 4px 10px rgba(99,102,241,0.18)"
+                                }}
+                            >
+                                {groupCreating
+                                    ? "Створення..."
+                                    : "Створити групу"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             <style>
                 {`
@@ -701,7 +1791,6 @@ function ChatSidebar({
                     }
                 `}
             </style>
-
         </aside>
     );
 }
