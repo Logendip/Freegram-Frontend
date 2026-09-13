@@ -1968,7 +1968,7 @@ function MessengerPage() {
 
 
     // ==========================================
-    // IGNORE GROUP INVITATION
+    // REJECT GROUP INVITATION
     // ==========================================
 
     const handleIgnoreGroupInvitation =
@@ -1987,6 +1987,7 @@ function MessengerPage() {
                         invitation.invitationId
                     );
 
+
                     setGroupInvitations(
                         (previousInvitations) =>
                             previousInvitations.filter(
@@ -2001,13 +2002,13 @@ function MessengerPage() {
                     );
                 } catch (error) {
                     console.error(
-                        "Failed to ignore group invitation:",
+                        "Failed to reject group invitation:",
                         error
                     );
 
                     alert(
                         error.message ||
-                        "Не вдалося проігнорувати запрошення."
+                        "Не вдалося відхилити запрошення."
                     );
                 }
             },
@@ -2834,6 +2835,7 @@ function MessengerPage() {
                                 key={
                                     notification.id
                                 }
+
                                 style={{
                                     background:
                                         "#ffffff",
@@ -2908,17 +2910,32 @@ function MessengerPage() {
             {safeChatRequests.length > 0 && (
                 <div
                     style={{
-                        position: "fixed",
-                        top: "20px",
-                        right: "20px",
-                        zIndex: 1000,
-                        width: "360px",
+                        position:
+                            "fixed",
+
+                        top:
+                            "20px",
+
+                        right:
+                            "20px",
+
+                        zIndex:
+                            1000,
+
+                        width:
+                            "360px",
+
                         maxWidth:
                             "calc(100vw - 40px)",
-                        display: "flex",
+
+                        display:
+                            "flex",
+
                         flexDirection:
                             "column",
-                        gap: "12px"
+
+                        gap:
+                            "12px"
                     }}
                 >
                     {safeChatRequests.map(
@@ -2927,15 +2944,20 @@ function MessengerPage() {
                                 key={
                                     request.requestId
                                 }
+
                                 style={{
                                     background:
                                         "#ffffff",
+
                                     border:
                                         "1px solid #ddd",
+
                                     borderRadius:
                                         "12px",
+
                                     padding:
                                         "16px",
+
                                     boxShadow:
                                         "0 8px 30px rgba(0,0,0,0.15)"
                                 }}
@@ -2944,6 +2966,7 @@ function MessengerPage() {
                                     style={{
                                         fontWeight:
                                             "600",
+
                                         marginBottom:
                                             "8px"
                                     }}
@@ -2955,6 +2978,7 @@ function MessengerPage() {
                                     style={{
                                         color:
                                             "#555",
+
                                         marginBottom:
                                             "14px"
                                     }}
@@ -2976,30 +3000,39 @@ function MessengerPage() {
                                     style={{
                                         display:
                                             "flex",
+
                                         gap:
                                             "8px"
                                     }}
                                 >
                                     <button
                                         type="button"
+
                                         onClick={() =>
                                             handleAcceptChatRequest(
                                                 request
                                             )
                                         }
+
                                         style={{
                                             flex:
                                                 1,
+
                                             padding:
                                                 "9px 12px",
+
                                             border:
                                                 "none",
+
                                             borderRadius:
                                                 "8px",
+
                                             cursor:
                                                 "pointer",
+
                                             background:
                                                 "#222",
+
                                             color:
                                                 "#fff"
                                         }}
@@ -3009,24 +3042,32 @@ function MessengerPage() {
 
                                     <button
                                         type="button"
+
                                         onClick={() =>
                                             handleRejectChatRequest(
                                                 request
                                             )
                                         }
+
                                         style={{
                                             flex:
                                                 1,
+
                                             padding:
                                                 "9px 12px",
+
                                             border:
                                                 "1px solid #ddd",
+
                                             borderRadius:
                                                 "8px",
+
                                             cursor:
                                                 "pointer",
+
                                             background:
                                                 "#fff",
+
                                             color:
                                                 "#333"
                                         }}
@@ -3048,19 +3089,32 @@ function MessengerPage() {
             {safeGroupInvitations.length > 0 && (
                 <div
                     style={{
-                        position: "fixed",
+                        position:
+                            "fixed",
+
                         top:
                             safeChatRequests.length > 0
                                 ? "200px"
                                 : "20px",
-                        right: "20px",
-                        zIndex: 999,
-                        width: "360px",
+
+                        right:
+                            "20px",
+
+                        zIndex:
+                            999,
+
+                        width:
+                            "360px",
+
                         maxWidth:
                             "calc(100vw - 40px)",
-                        display: "flex",
+
+                        display:
+                            "flex",
+
                         flexDirection:
                             "column",
+
                         gap:
                             "12px"
                     }}
@@ -3071,34 +3125,56 @@ function MessengerPage() {
                                 key={
                                     invitation.invitationId
                                 }
+
                                 style={{
                                     background:
                                         "#ffffff",
+
                                     border:
                                         "1px solid #ddd",
+
                                     borderRadius:
                                         "12px",
+
                                     padding:
                                         "16px",
+
                                     boxShadow:
                                         "0 8px 30px rgba(0,0,0,0.15)"
                                 }}
                             >
+
+                                {/* TITLE */}
+
                                 <div
                                     style={{
                                         fontWeight:
                                             "600",
+
+                                        fontSize:
+                                            "16px",
+
                                         marginBottom:
                                             "8px"
                                     }}
                                 >
-                                    Запрошення до групи
+                                    👥 Запрошення до групи
                                 </div>
+
+
+                                {/* DESCRIPTION */}
 
                                 <div
                                     style={{
                                         color:
                                             "#555",
+
+                                        fontSize:
+                                            "14px",
+
+                                        lineHeight:
+                                            "1.5",
+
                                         marginBottom:
                                             "14px"
                                     }}
@@ -3110,81 +3186,122 @@ function MessengerPage() {
                                                 ?.nickname ??
                                             invitation
                                                 .sender
-                                                ?.Nickname
+                                                ?.Nickname ??
+                                            "Користувач"
                                         }
                                     </strong>{" "}
-                                    запросив вас до групи{" "}
+                                    запрошує вас до групи{" "}
                                     <strong>
                                         {
                                             invitation
-                                                .chatName
+                                                .chatName ||
+                                            "Група"
                                         }
-                                    </strong>
-                                    .
+                                    </strong>.
                                 </div>
+
+
+                                {/* BUTTONS */}
 
                                 <div
                                     style={{
                                         display:
                                             "flex",
+
                                         gap:
                                             "8px"
                                     }}
                                 >
+
+                                    {/* ACCEPT */}
+
                                     <button
                                         type="button"
+
                                         onClick={() =>
                                             handleAcceptGroupInvitation(
                                                 invitation
                                             )
                                         }
+
                                         style={{
                                             flex:
                                                 1,
+
                                             padding:
                                                 "9px 12px",
+
                                             border:
                                                 "none",
+
                                             borderRadius:
                                                 "8px",
+
                                             cursor:
                                                 "pointer",
+
                                             background:
                                                 "#222",
+
                                             color:
-                                                "#fff"
+                                                "#fff",
+
+                                            fontSize:
+                                                "14px",
+
+                                            fontWeight:
+                                                "500"
                                         }}
                                     >
-                                        Приєднатися
+                                        Прийняти
                                     </button>
+
+
+                                    {/* REJECT */}
 
                                     <button
                                         type="button"
+
                                         onClick={() =>
                                             handleIgnoreGroupInvitation(
                                                 invitation
                                             )
                                         }
+
                                         style={{
                                             flex:
                                                 1,
+
                                             padding:
                                                 "9px 12px",
+
                                             border:
                                                 "1px solid #ddd",
+
                                             borderRadius:
                                                 "8px",
+
                                             cursor:
                                                 "pointer",
+
                                             background:
                                                 "#fff",
+
                                             color:
-                                                "#333"
+                                                "#333",
+
+                                            fontSize:
+                                                "14px",
+
+                                            fontWeight:
+                                                "500"
                                         }}
                                     >
-                                        Ігнорувати
+                                        Відхилити
                                     </button>
+
                                 </div>
+
                             </div>
                         )
                     )}
@@ -3284,15 +3401,22 @@ function MessengerPage() {
                 <div
                     style={{
                         flex: 1,
-                        display: "flex",
+
+                        display:
+                            "flex",
+
                         alignItems:
                             "center",
+
                         justifyContent:
                             "center",
+
                         color:
                             "#777",
+
                         background:
                             "#fafafa",
+
                         fontSize:
                             "16px"
                     }}
