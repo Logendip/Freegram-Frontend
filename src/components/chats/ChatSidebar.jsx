@@ -57,10 +57,7 @@ function ChatSidebar({
             setTimeout(
                 async () => {
                     try {
-                        setSearchLoading(
-                            true
-                        );
-
+                        setSearchLoading(true);
                         setSearchError("");
 
                         const result =
@@ -91,18 +88,14 @@ function ChatSidebar({
                             "Не вдалося виконати пошук."
                         );
                     } finally {
-                        setSearchLoading(
-                            false
-                        );
+                        setSearchLoading(false);
                     }
                 },
                 300
             );
 
         return () =>
-            clearTimeout(
-                timeoutId
-            );
+            clearTimeout(timeoutId);
     }, [
         search,
         token,
@@ -114,52 +107,87 @@ function ChatSidebar({
 
     return (
         <aside
+            className="freegram-chat-sidebar"
             style={{
-                width: "320px",
-                minWidth: "320px",
-                borderRight:
-                    "1px solid #ddd",
+                width: "100%",
+                height: "100%",
+                minWidth: 0,
                 display: "flex",
-                flexDirection:
-                    "column",
-                background: "#fff"
+                flexDirection: "column",
+                background: "#ffffff",
+                borderRight: "1px solid #e5e7eb",
+                boxSizing: "border-box",
+                overflow: "hidden"
             }}
         >
+            {/* Sidebar header */}
+
             <div
                 style={{
-                    padding: "18px",
-                    borderBottom:
-                        "1px solid #eee"
+                    padding: "20px 18px 16px",
+                    flexShrink: 0,
+                    background: "#ffffff"
                 }}
             >
-                <h2
+                <div
                     style={{
-                        margin:
-                            "0 0 15px 0"
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "16px"
                     }}
                 >
-                    Чати
-                </h2>
+                    <h2
+                        style={{
+                            margin: 0,
+                            fontSize: "22px",
+                            fontWeight: "700",
+                            color: "#1f2937",
+                            letterSpacing: "-0.3px"
+                        }}
+                    >
+                        Чати
+                    </h2>
+
+                    <div
+                        style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "10px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background:
+                                "linear-gradient(135deg, #7c3aed, #6366f1)",
+                            color: "#ffffff",
+                            fontSize: "15px",
+                            fontWeight: "700",
+                            boxShadow:
+                                "0 4px 10px rgba(99,102,241,0.22)"
+                        }}
+                    >
+                        F
+                    </div>
+                </div>
+
+                {/* Search */}
 
                 <div
                     style={{
-                        position:
-                            "relative"
+                        position: "relative"
                     }}
                 >
                     <span
                         style={{
-                            position:
-                                "absolute",
+                            position: "absolute",
                             left: "13px",
                             top: "50%",
                             transform:
                                 "translateY(-50%)",
-                            color: "#888",
-                            fontSize:
-                                "15px",
-                            pointerEvents:
-                                "none"
+                            color: "#9ca3af",
+                            fontSize: "15px",
+                            pointerEvents: "none",
+                            zIndex: 1
                         }}
                     >
                         🔍
@@ -167,70 +195,95 @@ function ChatSidebar({
 
                     <input
                         type="text"
-                        placeholder="Пошук користувачів або чатів..."
+                        placeholder="Пошук"
                         value={search}
-                        onChange={(
-                            event
-                        ) =>
+                        onChange={(event) =>
                             setSearch(
-                                event
-                                    .target
-                                    .value
+                                event.target.value
                             )
                         }
                         style={{
                             width: "100%",
-                            boxSizing:
-                                "border-box",
+                            height: "42px",
+                            boxSizing: "border-box",
                             padding:
-                                "11px 14px 11px 38px",
+                                "0 14px 0 38px",
                             border:
-                                "1px solid #ddd",
-                            borderRadius:
-                                "10px",
-                            outline:
-                                "none",
-                            fontSize:
-                                "14px"
+                                "1px solid #e5e7eb",
+                            borderRadius: "12px",
+                            outline: "none",
+                            background: "#f3f4f6",
+                            color: "#1f2937",
+                            fontSize: "14px",
+                            transition:
+                                "all 0.2s ease"
+                        }}
+                        onFocus={(event) => {
+                            event.currentTarget.style.background =
+                                "#ffffff";
+
+                            event.currentTarget.style.borderColor =
+                                "#a78bfa";
+
+                            event.currentTarget.style.boxShadow =
+                                "0 0 0 3px rgba(124,58,237,0.10)";
+                        }}
+                        onBlur={(event) => {
+                            event.currentTarget.style.background =
+                                "#f3f4f6";
+
+                            event.currentTarget.style.borderColor =
+                                "#e5e7eb";
+
+                            event.currentTarget.style.boxShadow =
+                                "none";
                         }}
                     />
                 </div>
             </div>
 
+            {/* Content */}
+
             <div
                 style={{
                     flex: 1,
+                    minHeight: 0,
                     overflowY: "auto",
-                    padding:
-                        "8px"
+                    overflowX: "hidden",
+                    padding: "4px 10px 14px",
+                    boxSizing: "border-box"
                 }}
+                className="freegram-sidebar-content"
             >
                 {hasSearch ? (
                     <>
+                        {/* Users title */}
+
                         <div
                             style={{
                                 padding:
-                                    "8px 8px 10px",
-                                fontSize:
-                                    "12px",
-                                fontWeight:
-                                    "600",
-                                color:
-                                    "#888",
+                                    "10px 8px 8px",
+                                fontSize: "11px",
+                                fontWeight: "700",
+                                color: "#9ca3af",
                                 textTransform:
-                                    "uppercase"
+                                    "uppercase",
+                                letterSpacing:
+                                    "0.6px"
                             }}
                         >
                             Користувачі
                         </div>
 
+                        {/* Loading */}
+
                         {searchLoading && (
                             <div
                                 style={{
                                     padding:
-                                        "15px 8px",
-                                    color:
-                                        "#777",
+                                        "22px 8px",
+                                    color: "#9ca3af",
+                                    fontSize: "14px",
                                     textAlign:
                                         "center"
                                 }}
@@ -239,16 +292,24 @@ function ChatSidebar({
                             </div>
                         )}
 
+                        {/* Error */}
+
                         {!searchLoading &&
                             searchError && (
                                 <div
                                     style={{
+                                        margin:
+                                            "4px 0",
                                         padding:
-                                            "12px 8px",
+                                            "12px",
+                                        borderRadius:
+                                            "10px",
+                                        background:
+                                            "#fef2f2",
                                         color:
-                                            "#d32f2f",
+                                            "#dc2626",
                                         fontSize:
-                                            "14px"
+                                            "13px"
                                     }}
                                 >
                                     {
@@ -257,18 +318,19 @@ function ChatSidebar({
                                 </div>
                             )}
 
+                        {/* No users */}
+
                         {!searchLoading &&
                             !searchError &&
-                            users.length ===
-                                0 && (
+                            users.length === 0 && (
                                 <div
                                     style={{
                                         padding:
-                                            "12px 8px",
+                                            "18px 8px",
                                         color:
-                                            "#777",
+                                            "#9ca3af",
                                         fontSize:
-                                            "14px",
+                                            "13px",
                                         textAlign:
                                             "center"
                                     }}
@@ -276,6 +338,8 @@ function ChatSidebar({
                                     Користувачів не знайдено.
                                 </div>
                             )}
+
+                        {/* Users */}
 
                         {!searchLoading &&
                             users.map(
@@ -290,6 +354,7 @@ function ChatSidebar({
                                                 user
                                             )
                                         }
+                                        className="freegram-user-result"
                                         style={{
                                             width:
                                                 "100%",
@@ -298,21 +363,25 @@ function ChatSidebar({
                                             alignItems:
                                                 "center",
                                             gap:
-                                                "12px",
+                                                "11px",
                                             padding:
-                                                "10px",
+                                                "9px 8px",
                                             marginBottom:
-                                                "4px",
+                                                "3px",
                                             border:
                                                 "none",
                                             borderRadius:
-                                                "10px",
+                                                "11px",
                                             background:
                                                 "transparent",
                                             cursor:
                                                 "pointer",
                                             textAlign:
-                                                "left"
+                                                "left",
+                                            boxSizing:
+                                                "border-box",
+                                            transition:
+                                                "background 0.15s ease"
                                         }}
                                         onMouseEnter={(
                                             event
@@ -327,20 +396,22 @@ function ChatSidebar({
                                                 "transparent";
                                         }}
                                     >
+                                        {/* Avatar */}
+
                                         <div
                                             style={{
                                                 width:
-                                                    "44px",
+                                                    "46px",
                                                 height:
-                                                    "44px",
+                                                    "46px",
                                                 minWidth:
-                                                    "44px",
+                                                    "46px",
                                                 borderRadius:
                                                     "50%",
                                                 background:
-                                                    "#2563eb",
+                                                    "linear-gradient(135deg, #8b5cf6, #6366f1)",
                                                 color:
-                                                    "#fff",
+                                                    "#ffffff",
                                                 display:
                                                     "flex",
                                                 alignItems:
@@ -350,7 +421,9 @@ function ChatSidebar({
                                                 fontWeight:
                                                     "700",
                                                 fontSize:
-                                                    "17px"
+                                                    "17px",
+                                                boxShadow:
+                                                    "0 2px 6px rgba(99,102,241,0.18)"
                                             }}
                                         >
                                             {user.nickname
@@ -360,12 +433,13 @@ function ChatSidebar({
                                                 .toUpperCase()}
                                         </div>
 
+                                        {/* User information */}
+
                                         <div
                                             style={{
                                                 minWidth:
                                                     0,
-                                                flex:
-                                                    1
+                                                flex: 1
                                             }}
                                         >
                                             <div
@@ -373,7 +447,9 @@ function ChatSidebar({
                                                     fontWeight:
                                                         "600",
                                                     color:
-                                                        "#222",
+                                                        "#1f2937",
+                                                    fontSize:
+                                                        "14px",
                                                     overflow:
                                                         "hidden",
                                                     textOverflow:
@@ -390,43 +466,65 @@ function ChatSidebar({
                                             <div
                                                 style={{
                                                     fontSize:
-                                                        "13px",
+                                                        "12px",
                                                     color:
-                                                        "#888",
+                                                        "#9ca3af",
                                                     marginTop:
-                                                        "3px"
+                                                        "4px",
+                                                    overflow:
+                                                        "hidden",
+                                                    textOverflow:
+                                                        "ellipsis",
+                                                    whiteSpace:
+                                                        "nowrap"
                                                 }}
                                             >
-                                                Натисніть, щоб відкрити чат
+                                                Відкрити чат
                                             </div>
                                         </div>
+
+                                        <span
+                                            style={{
+                                                color:
+                                                    "#c4b5fd",
+                                                fontSize:
+                                                    "18px"
+                                            }}
+                                        >
+                                            ›
+                                        </span>
                                     </button>
                                 )
                             )}
 
+                        {/* Chats title */}
+
                         <div
                             style={{
                                 margin:
-                                    "14px 8px 8px",
-                                borderTop:
-                                    "1px solid #eee",
+                                    "14px 8px 7px",
                                 paddingTop:
-                                    "12px",
+                                    "14px",
+                                borderTop:
+                                    "1px solid #f0f0f0",
                                 fontSize:
-                                    "12px",
+                                    "11px",
                                 fontWeight:
-                                    "600",
+                                    "700",
                                 color:
-                                    "#888",
+                                    "#9ca3af",
                                 textTransform:
-                                    "uppercase"
+                                    "uppercase",
+                                letterSpacing:
+                                    "0.6px"
                             }}
                         >
                             Ваші чати
                         </div>
 
-                        {filteredChats.length >
-                        0 ? (
+                        {/* Filtered chats */}
+
+                        {filteredChats.length > 0 ? (
                             <ChatList
                                 chats={
                                     filteredChats
@@ -445,11 +543,13 @@ function ChatSidebar({
                             <div
                                 style={{
                                     padding:
-                                        "10px 8px",
+                                        "18px 8px",
                                     color:
-                                        "#888",
+                                        "#9ca3af",
                                     fontSize:
-                                        "14px"
+                                        "13px",
+                                    textAlign:
+                                        "center"
                                 }}
                             >
                                 Чатів не знайдено.
@@ -473,6 +573,38 @@ function ChatSidebar({
                     />
                 )}
             </div>
+
+            <style>
+                {`
+                    .freegram-sidebar-content::-webkit-scrollbar {
+                        width: 6px;
+                    }
+
+                    .freegram-sidebar-content::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+
+                    .freegram-sidebar-content::-webkit-scrollbar-thumb {
+                        background: #d1d5db;
+                        border-radius: 10px;
+                    }
+
+                    .freegram-sidebar-content::-webkit-scrollbar-thumb:hover {
+                        background: #aeb4bd;
+                    }
+
+                    @media (max-width: 768px) {
+                        .freegram-chat-sidebar {
+                            border-right: none !important;
+                        }
+
+                        .freegram-sidebar-content {
+                            padding-left: 8px !important;
+                            padding-right: 8px !important;
+                        }
+                    }
+                `}
+            </style>
         </aside>
     );
 }
