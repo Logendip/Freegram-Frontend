@@ -96,13 +96,14 @@ function ChatHeader({
             member.user?.nickname ??
             member.user?.Nickname ??
             member.User?.nickname ??
-            member.User?.Nickname;
+            member.User?.Nickname ??
+            "";
 
         if (
             typeof nickname === "string" &&
             nickname.trim()
         ) {
-            return nickname;
+            return nickname.trim();
         }
 
         return fallback;
@@ -116,19 +117,16 @@ function ChatHeader({
     const normalizeMember = (
         member
     ) => {
-        const id =
-            getMemberId(
-                member
-            );
-
-        const nickname =
-            getMemberNickname(
-                member
-            );
-
         return {
-            id,
-            nickname
+            id:
+                getMemberId(
+                    member
+                ),
+
+            nickname:
+                getMemberNickname(
+                    member
+                )
         };
     };
 
@@ -206,7 +204,7 @@ function ChatHeader({
 
 
     // ==========================================
-    // CLOSE
+    // BACK
     // ==========================================
 
     const handleBack = () => {
@@ -223,7 +221,7 @@ function ChatHeader({
 
 
     // ==========================================
-    // DELETE CHAT / GROUP
+    // DELETE CHAT
     // ==========================================
 
     const handleDeleteChat = async () => {
@@ -260,7 +258,7 @@ function ChatHeader({
 
 
     // ==========================================
-    // REMOVE GROUP MEMBER
+    // REMOVE MEMBER
     // ==========================================
 
     const handleRemoveMember = async (
@@ -319,7 +317,7 @@ function ChatHeader({
 
 
     // ==========================================
-    // ADD GROUP MEMBER
+    // ADD MEMBER
     // ==========================================
 
     const handleAddMember = async (
@@ -454,7 +452,7 @@ function ChatHeader({
         >
 
             {/* =====================================
-                MOBILE BACK BUTTON
+                MOBILE BACK
             ====================================== */}
 
             <button
@@ -548,7 +546,7 @@ function ChatHeader({
 
 
             {/* =====================================
-                CHAT MENU
+                MENU
             ====================================== */}
 
             <div
@@ -627,12 +625,12 @@ function ChatHeader({
                         }}
                     >
 
-                        {/* =================================
-                            GROUP MENU
-                        ================================== */}
-
                         {isGroup ? (
                             <>
+
+                                {/* =================================
+                                    MEMBERS
+                                ================================== */}
 
                                 <button
                                     type="button"
@@ -720,7 +718,7 @@ function ChatHeader({
 
 
                                 {/* =================================
-                                    ADD MEMBER SEARCH
+                                    SEARCH
                                 ================================== */}
 
                                 {showAddMember && (
@@ -732,6 +730,7 @@ function ChatHeader({
                                                 "12px"
                                         }}
                                     >
+
                                         <input
                                             type="text"
                                             value={
@@ -764,6 +763,7 @@ function ChatHeader({
                                             }}
                                         />
 
+
                                         <div
                                             style={{
                                                 marginTop:
@@ -774,7 +774,9 @@ function ChatHeader({
                                                     "auto"
                                             }}
                                         >
+
                                             {searchLoading ? (
+
                                                 <div
                                                     style={{
                                                         padding:
@@ -787,9 +789,11 @@ function ChatHeader({
                                                 >
                                                     Пошук...
                                                 </div>
+
                                             ) : search.trim() &&
                                                 searchResults.length ===
                                                     0 ? (
+
                                                 <div
                                                     style={{
                                                         padding:
@@ -802,12 +806,15 @@ function ChatHeader({
                                                 >
                                                     Користувачів не знайдено
                                                 </div>
+
                                             ) : (
+
                                                 searchResults.map(
                                                     (
                                                         result,
                                                         index
                                                     ) => {
+
                                                         const resultId =
                                                             Number(
                                                                 result.id ??
@@ -816,20 +823,30 @@ function ChatHeader({
                                                                 result.UserId
                                                             );
 
+
+                                                        // =================================
+                                                        // NICKNAME SEARCH RESULT
+                                                        // =================================
+
                                                         const nickname =
-                                                            result.nickname ??
-                                                            result.Nickname ??
-                                                            result.user?.nickname ??
-                                                            result.user?.Nickname ??
-                                                            result.User?.nickname ??
-                                                            result.User?.Nickname ??
+                                                            (
+                                                                result.nickname ??
+                                                                result.Nickname ??
+                                                                result.user?.nickname ??
+                                                                result.user?.Nickname ??
+                                                                result.User?.nickname ??
+                                                                result.User?.Nickname ??
+                                                                ""
+                                                            ).toString().trim() ||
                                                             "Користувач";
+
 
                                                         const current =
                                                             resultId ===
                                                             Number(
                                                                 currentUserId
                                                             );
+
 
                                                         const alreadyMember =
                                                             safeMembers.some(
@@ -842,12 +859,14 @@ function ChatHeader({
                                                                     resultId
                                                             );
 
+
                                                         if (
                                                             current ||
                                                             alreadyMember
                                                         ) {
                                                             return null;
                                                         }
+
 
                                                         return (
                                                             <button
@@ -893,9 +912,14 @@ function ChatHeader({
                                                                         addingUserId ===
                                                                         resultId
                                                                             ? 0.6
-                                                                            : 1
+                                                                            : 1,
+                                                                    boxSizing:
+                                                                        "border-box"
                                                                 }}
                                                             >
+
+                                                                {/* AVATAR */}
+
                                                                 <div
                                                                     style={{
                                                                         width:
@@ -915,7 +939,9 @@ function ChatHeader({
                                                                         justifyContent:
                                                                             "center",
                                                                         fontWeight:
-                                                                            "600"
+                                                                            "600",
+                                                                        flexShrink:
+                                                                            0
                                                                     }}
                                                                 >
                                                                     {nickname
@@ -925,8 +951,15 @@ function ChatHeader({
                                                                         .toUpperCase()}
                                                                 </div>
 
+
+                                                                {/* NICKNAME */}
+
                                                                 <span
                                                                     style={{
+                                                                        flex:
+                                                                            1,
+                                                                        minWidth:
+                                                                            0,
                                                                         overflow:
                                                                             "hidden",
                                                                         textOverflow:
@@ -934,7 +967,17 @@ function ChatHeader({
                                                                         whiteSpace:
                                                                             "nowrap",
                                                                         fontSize:
-                                                                            "14px"
+                                                                            "14px",
+                                                                        color:
+                                                                            "#333",
+                                                                        fontWeight:
+                                                                            "500",
+                                                                        display:
+                                                                            "block",
+                                                                        visibility:
+                                                                            "visible",
+                                                                        opacity:
+                                                                            1
                                                                     }}
                                                                 >
                                                                     {
@@ -942,24 +985,35 @@ function ChatHeader({
                                                                     }
                                                                 </span>
 
+
+                                                                {/* ADD */}
+
                                                                 <span
                                                                     style={{
                                                                         marginLeft:
                                                                             "auto",
                                                                         color:
-                                                                            "#777"
+                                                                            "#7650c7",
+                                                                        fontSize:
+                                                                            "22px",
+                                                                        lineHeight:
+                                                                            "1",
+                                                                        flexShrink:
+                                                                            0
                                                                     }}
                                                                 >
                                                                     {addingUserId ===
                                                                     resultId
                                                                         ? "..."
-                                                                        : "➕"}
+                                                                        : "+"}
                                                                 </span>
+
                                                             </button>
                                                         );
                                                     }
                                                 )
                                             )}
+
                                         </div>
                                     </div>
                                 )}
@@ -983,6 +1037,7 @@ function ChatHeader({
 
                                         {safeMembers.length ===
                                             0 ? (
+
                                             <div
                                                 style={{
                                                     padding:
@@ -995,7 +1050,9 @@ function ChatHeader({
                                             >
                                                 Немає учасників
                                             </div>
+
                                         ) : (
+
                                             safeMembers.map(
                                                 (
                                                     member,
@@ -1024,6 +1081,7 @@ function ChatHeader({
                                                         Number(
                                                             creatorId
                                                         );
+
 
                                                     return (
                                                         <div
@@ -1090,27 +1148,35 @@ function ChatHeader({
                                                                     flex:
                                                                         1,
                                                                     minWidth:
-                                                                        0
+                                                                        0,
+                                                                    overflow:
+                                                                        "hidden"
                                                                 }}
                                                             >
+
                                                                 <div
                                                                     style={{
                                                                         fontSize:
                                                                             "14px",
                                                                         fontWeight:
                                                                             "500",
+                                                                        color:
+                                                                            "#333",
                                                                         overflow:
                                                                             "hidden",
                                                                         textOverflow:
                                                                             "ellipsis",
                                                                         whiteSpace:
-                                                                            "nowrap"
+                                                                            "nowrap",
+                                                                        display:
+                                                                            "block"
                                                                     }}
                                                                 >
                                                                     {
                                                                         nickname
                                                                     }
                                                                 </div>
+
 
                                                                 {isCurrentUser && (
                                                                     <div
@@ -1126,6 +1192,7 @@ function ChatHeader({
                                                                         Ви
                                                                     </div>
                                                                 )}
+
                                                             </div>
 
 
@@ -1264,7 +1331,7 @@ function ChatHeader({
 
 
             {/* =====================================
-                MOBILE STYLES
+                MOBILE
             ====================================== */}
 
             <style>
