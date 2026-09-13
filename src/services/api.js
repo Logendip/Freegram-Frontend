@@ -87,6 +87,7 @@ export async function createPrivateChat(
     );
 }
 
+
 // ==========================================
 // CREATE GROUP CHAT
 // ==========================================
@@ -112,6 +113,11 @@ export async function createGroupChat(
     );
 }
 
+
+// ==========================================
+// DELETE CHAT
+// ==========================================
+
 export async function deleteChat(
     token,
     chatId
@@ -126,6 +132,11 @@ export async function deleteChat(
         }
     );
 }
+
+
+// ==========================================
+// SEARCH USERS
+// ==========================================
 
 export async function searchUsers(
     token,
@@ -190,5 +201,54 @@ export async function rejectChatRequest(
         }
     );
 }
+
+
+// ==========================================
+// GROUP INVITATIONS
+// ==========================================
+
+export async function getGroupInvitations(
+    token
+) {
+    return request(
+        "/api/Chats/group-invitations",
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+}
+
+export async function acceptGroupInvitation(
+    token,
+    invitationId
+) {
+    return request(
+        `/api/Chats/group-invitations/${invitationId}/accept`,
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+}
+
+export async function ignoreGroupInvitation(
+    token,
+    invitationId
+) {
+    return request(
+        `/api/Chats/group-invitations/${invitationId}`,
+        {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+}
+
 
 export { API_URL };

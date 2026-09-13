@@ -6,10 +6,13 @@ import {
 } from "react";
 
 import {
+    HubConnectionBuilder,
     HubConnectionState
 } from "@microsoft/signalr";
 
-import { createChatConnection } from "../services/signalr";
+const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:5000";
 
 export function useSignalR({
     token,
@@ -19,24 +22,37 @@ export function useSignalR({
     onMessageDeletedForMe,
     onChatDeleted,
     onChatRequestCreated,
-    onChatRequestAccepted
+    onChatRequestAccepted,
+    onGroupInvitationReceived,
+    onGroupInvitationAccepted
 }) {
-    const connectionRef = useRef(null);
+    const connectionRef =
+        useRef(null);
 
-    const callbacksRef = useRef({
-        onReceiveMessage,
-        onMessageRead,
-        onMessageDeletedForEveryone,
-        onMessageDeletedForMe,
-        onChatDeleted,
-        onChatRequestCreated,
-        onChatRequestAccepted
-    });
+    const callbacksRef =
+        useRef({
+            onReceiveMessage,
+            onMessageRead,
+            onMessageDeletedForEveryone,
+            onMessageDeletedForMe,
+            onChatDeleted,
+            onChatRequestCreated,
+            onChatRequestAccepted,
+            onGroupInvitationReceived,
+            onGroupInvitationAccepted
+        });
 
-    const [connectionState, setConnectionState] =
-        useState(
-            HubConnectionState.Disconnected
-        );
+    const [
+        connectionState,
+        setConnectionState
+    ] = useState(
+        HubConnectionState.Disconnected
+    );
+
+
+    // ==========================================
+    // UPDATE CALLBACKS
+    // ==========================================
 
     useEffect(() => {
         callbacksRef.current = {
@@ -46,7 +62,9 @@ export function useSignalR({
             onMessageDeletedForMe,
             onChatDeleted,
             onChatRequestCreated,
-            onChatRequestAccepted
+            onChatRequestAccepted,
+            onGroupInvitationReceived,
+            onGroupInvitationAccepted
         };
     }, [
         onReceiveMessage,
@@ -55,8 +73,15 @@ export function useSignalR({
         onMessageDeletedForMe,
         onChatDeleted,
         onChatRequestCreated,
-        onChatRequestAccepted
+        onChatRequestAccepted,
+        onGroupInvitationReceived,
+        onGroupInvitationAccepted
     ]);
+
+
+    // ==========================================
+    // CONNECTION
+    // ==========================================
 
     useEffect(() => {
         if (!token) {
@@ -64,19 +89,39 @@ export function useSignalR({
         }
 
         const connection =
-            createChatConnection(token);
+            new HubConnectionBuilder()
+                .withUrl(
+                    `${API_BASE_URL}/chatHub`,
+                    {
+                        accessTokenFactory:
+                            () => token
+                    }
+                )
+                .withAutomaticReconnect()
+                .build();
 
-        connectionRef.current = connection;
+        connectionRef.current =
+            connection;
+
+
+        // ==========================================
+        // RECEIVE MESSAGE
+        // ==========================================
 
         connection.on(
             "ReceiveMessage",
-            (message) => {
+            (data) => {
                 callbacksRef.current
                     .onReceiveMessage?.(
-                        message
+                        data
                     );
             }
         );
+
+
+        // ==========================================
+        // MESSAGE READ
+        // ==========================================
 
         connection.on(
             "MessageRead",
@@ -88,6 +133,11 @@ export function useSignalR({
             }
         );
 
+
+        // ==========================================
+        // MESSAGE DELETED FOR EVERYONE
+        // ==========================================
+
         connection.on(
             "MessageDeletedForEveryone",
             (data) => {
@@ -97,6 +147,11 @@ export function useSignalR({
                     );
             }
         );
+
+
+        // ==========================================
+        // MESSAGE DELETED FOR ME
+        // ==========================================
 
         connection.on(
             "MessageDeletedForMe",
@@ -108,41 +163,29 @@ export function useSignalR({
             }
         );
 
+
+        // ==========================================
+        // CHAT DELETED
+        // ==========================================
+
         connection.on(
             "ChatDeleted",
-            async (chatId) => {
-                try {
-                    if (
-                        connection.state ===
-                        HubConnectionState.Connected
-                    ) {
-                        await connection.invoke(
-                            "LeaveChat",
-                            chatId
-                        );
-                    }
-                } catch (error) {
-                    console.error(
-                        "Failed to leave deleted chat:",
-                        error
-                    );
-                }
-
+            (data) => {
                 callbacksRef.current
                     .onChatDeleted?.(
-                        chatId
+                        data
                     );
             }
         );
 
+
+        // ==========================================
+        // PRIVATE CHAT REQUEST
+        // ==========================================
+
         connection.on(
             "ChatRequestCreated",
             (data) => {
-                console.log(
-                    "Chat request received:",
-                    data
-                );
-
                 callbacksRef.current
                     .onChatRequestCreated?.(
                         data
@@ -150,14 +193,14 @@ export function useSignalR({
             }
         );
 
+
+        // ==========================================
+        // PRIVATE CHAT REQUEST ACCEPTED
+        // ==========================================
+
         connection.on(
             "ChatRequestAccepted",
             (data) => {
-                console.log(
-                    "Chat request accepted:",
-                    data
-                );
-
                 callbacksRef.current
                     .onChatRequestAccepted?.(
                         data
@@ -165,76 +208,99 @@ export function useSignalR({
             }
         );
 
-        connection.onreconnecting(() => {
-            console.log(
-                "SignalR reconnecting..."
-            );
 
+        // ==========================================
+        // GROUP INVITATION RECEIVED
+        // ==========================================
+
+        connection.on(
+            "GroupInvitationReceived",
+            (data) => {
+                callbacksRef.current
+                    .onGroupInvitationReceived?.(
+                        data
+                    );
+            }
+        );
+
+
+        // ==========================================
+        // GROUP INVITATION ACCEPTED
+        // ==========================================
+
+        connection.on(
+            "GroupInvitationAccepted",
+            (data) => {
+                callbacksRef.current
+                    .onGroupInvitationAccepted?.(
+                        data
+                    );
+            }
+        );
+
+
+        // ==========================================
+        // CONNECTION STATE
+        // ==========================================
+
+        connection.onreconnecting(() => {
             setConnectionState(
                 HubConnectionState.Reconnecting
             );
         });
 
         connection.onreconnected(() => {
-            console.log(
-                "SignalR reconnected."
-            );
-
             setConnectionState(
                 HubConnectionState.Connected
             );
         });
 
         connection.onclose(() => {
-            console.log(
-                "SignalR connection closed."
-            );
-
             setConnectionState(
                 HubConnectionState.Disconnected
             );
         });
 
-        const startConnection =
-            async () => {
-                try {
-                    setConnectionState(
-                        HubConnectionState.Connecting
-                    );
 
-                    await connection.start();
+        // ==========================================
+        // START
+        // ==========================================
 
-                    console.log(
-                        "SignalR connected."
-                    );
+        connection
+            .start()
+            .then(() => {
+                setConnectionState(
+                    HubConnectionState.Connected
+                );
+            })
+            .catch((error) => {
+                console.error(
+                    "SignalR connection error:",
+                    error
+                );
 
-                    setConnectionState(
-                        HubConnectionState.Connected
-                    );
-                } catch (error) {
-                    console.error(
-                        "SignalR connection error:",
-                        error
-                    );
+                setConnectionState(
+                    HubConnectionState.Disconnected
+                );
+            });
 
-                    setConnectionState(
-                        HubConnectionState.Disconnected
-                    );
-                }
-            };
 
-        startConnection();
+        // ==========================================
+        // CLEANUP
+        // ==========================================
 
         return () => {
             connection.stop();
 
-            connectionRef.current = null;
-
-            setConnectionState(
-                HubConnectionState.Disconnected
-            );
+            connectionRef.current =
+                null;
         };
     }, [token]);
+
+
+    // ==========================================
+    // WAIT FOR CONNECTION
+    // ==========================================
 
     const waitForConnection =
         useCallback(
@@ -244,7 +310,7 @@ export function useSignalR({
 
                 if (!connection) {
                     throw new Error(
-                        "SignalR connection does not exist."
+                        "SignalR connection is not initialized."
                     );
                 }
 
@@ -257,91 +323,61 @@ export function useSignalR({
 
                 if (
                     connection.state ===
-                    HubConnectionState.Disconnected
+                    HubConnectionState.Connecting ||
+                    connection.state ===
+                    HubConnectionState.Reconnecting
                 ) {
-                    try {
-                        setConnectionState(
-                            HubConnectionState.Connecting
-                        );
+                    await new Promise(
+                        (resolve, reject) => {
+                            const timeout =
+                                setTimeout(
+                                    () => {
+                                        reject(
+                                            new Error(
+                                                "SignalR connection timeout."
+                                            )
+                                        );
+                                    },
+                                    10000
+                                );
 
-                        await connection.start();
+                            const check =
+                                () => {
+                                    if (
+                                        connection.state ===
+                                        HubConnectionState.Connected
+                                    ) {
+                                        clearTimeout(
+                                            timeout
+                                        );
 
-                        setConnectionState(
-                            HubConnectionState.Connected
-                        );
+                                        resolve();
+                                    } else {
+                                        setTimeout(
+                                            check,
+                                            100
+                                        );
+                                    }
+                                };
 
-                        return connection;
-                    } catch (error) {
-                        setConnectionState(
-                            HubConnectionState.Disconnected
-                        );
+                            check();
+                        }
+                    );
 
-                        throw error;
-                    }
+                    return connection;
                 }
 
-                await new Promise(
-                    (
-                        resolve,
-                        reject
-                    ) => {
-                        const timeout =
-                            setTimeout(() => {
-                                reject(
-                                    new Error(
-                                        "SignalR connection timeout."
-                                    )
-                                );
-                            }, 10000);
-
-                        const checkConnection =
-                            () => {
-                                const state =
-                                    connection.state;
-
-                                if (
-                                    state ===
-                                    HubConnectionState.Connected
-                                ) {
-                                    clearTimeout(
-                                        timeout
-                                    );
-
-                                    resolve();
-                                    return;
-                                }
-
-                                if (
-                                    state ===
-                                    HubConnectionState.Disconnected
-                                ) {
-                                    clearTimeout(
-                                        timeout
-                                    );
-
-                                    reject(
-                                        new Error(
-                                            "SignalR connection was disconnected."
-                                        )
-                                    );
-
-                                    return;
-                                }
-
-                                setTimeout(
-                                    checkConnection,
-                                    100
-                                );
-                            };
-
-                        checkConnection();
-                    }
+                throw new Error(
+                    "SignalR is not connected."
                 );
-
-                return connection;
             },
             []
         );
+
+
+    // ==========================================
+    // JOIN CHAT
+    // ==========================================
 
     const joinChat =
         useCallback(
@@ -357,19 +393,21 @@ export function useSignalR({
             [waitForConnection]
         );
 
+
+    // ==========================================
+    // LEAVE CHAT
+    // ==========================================
+
     const leaveChat =
         useCallback(
             async (chatId) => {
                 const connection =
                     connectionRef.current;
 
-                if (!connection) {
-                    return;
-                }
-
                 if (
+                    !connection ||
                     connection.state !==
-                    HubConnectionState.Connected
+                        HubConnectionState.Connected
                 ) {
                     return;
                 }
@@ -381,6 +419,11 @@ export function useSignalR({
             },
             []
         );
+
+
+    // ==========================================
+    // SEND MESSAGE
+    // ==========================================
 
     const sendMessage =
         useCallback(
@@ -400,6 +443,11 @@ export function useSignalR({
             [waitForConnection]
         );
 
+
+    // ==========================================
+    // MARK MESSAGE AS READ
+    // ==========================================
+
     const markMessageAsRead =
         useCallback(
             async (
@@ -417,6 +465,11 @@ export function useSignalR({
             },
             [waitForConnection]
         );
+
+
+    // ==========================================
+    // DELETE MESSAGE FOR EVERYONE
+    // ==========================================
 
     const deleteMessageForEveryone =
         useCallback(
@@ -436,6 +489,11 @@ export function useSignalR({
             [waitForConnection]
         );
 
+
+    // ==========================================
+    // DELETE MESSAGE FOR ME
+    // ==========================================
+
     const deleteMessageForMe =
         useCallback(
             async (
@@ -454,12 +512,16 @@ export function useSignalR({
             [waitForConnection]
         );
 
+
     return {
         connectionState,
+
         joinChat,
         leaveChat,
+
         sendMessage,
         markMessageAsRead,
+
         deleteMessageForEveryone,
         deleteMessageForMe
     };

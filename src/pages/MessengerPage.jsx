@@ -9,11 +9,13 @@ import {
     getChats,
     getMessages,
     createPrivateChat,
-    createGroupChat,
     deleteChat,
     getChatRequests,
     acceptChatRequest,
-    rejectChatRequest
+    rejectChatRequest,
+    getGroupInvitations,
+    acceptGroupInvitation,
+    ignoreGroupInvitation
 } from "../services/api";
 
 import { useAuth } from "../contexts/AuthContext";
@@ -41,6 +43,9 @@ function MessengerPage() {
         useState([]);
 
     const [chatRequests, setChatRequests] =
+        useState([]);
+
+    const [groupInvitations, setGroupInvitations] =
         useState([]);
 
     const [mobileChatOpen, setMobileChatOpen] =
@@ -313,6 +318,13 @@ function MessengerPage() {
     const handleChatDeleted =
         useCallback(
             (chatId) => {
+                const deletedChatId =
+                    Number(
+                        chatId?.chatId ??
+                        chatId?.ChatId ??
+                        chatId
+                    );
+
                 setChats(
                     (previousChats) => {
                         const safeChats =
@@ -327,9 +339,7 @@ function MessengerPage() {
                                 Number(
                                     chat.id
                                 ) !==
-                                Number(
-                                    chatId
-                                )
+                                deletedChatId
                         );
                     }
                 );
@@ -340,9 +350,7 @@ function MessengerPage() {
                             Number(
                                 previousChat?.id
                             ) ===
-                            Number(
-                                chatId
-                            )
+                            deletedChatId
                         ) {
                             return null;
                         }
@@ -368,6 +376,28 @@ function MessengerPage() {
                     return;
                 }
 
+                const normalizedRequest = {
+                    ...data,
+
+                    requestId:
+                        Number(
+                            data.requestId ??
+                            data.RequestId ??
+                            data.id ??
+                            data.Id
+                        ),
+
+                    chatId:
+                        Number(
+                            data.chatId ??
+                            data.ChatId
+                        ),
+
+                    sender:
+                        data.sender ??
+                        data.Sender
+                };
+
                 setChatRequests(
                     (previousRequests) => {
                         const safeRequests =
@@ -380,8 +410,12 @@ function MessengerPage() {
                         const exists =
                             safeRequests.some(
                                 (request) =>
-                                    request.requestId ===
-                                    data.requestId
+                                    Number(
+                                        request.requestId
+                                    ) ===
+                                    Number(
+                                        normalizedRequest.requestId
+                                    )
                             );
 
                         if (exists) {
@@ -390,7 +424,7 @@ function MessengerPage() {
 
                         return [
                             ...safeRequests,
-                            data
+                            normalizedRequest
                         ];
                     }
                 );
@@ -400,99 +434,103 @@ function MessengerPage() {
 
 
     // ==========================================
-    // GROUP CHAT CREATED
+    // GROUP INVITATION RECEIVED
     // ==========================================
 
-    const handleGroupChatCreated =
+    const handleGroupInvitationReceived =
         useCallback(
             (data) => {
                 if (!data) {
                     return;
                 }
 
-                const groupId =
-                    Number(
-                        data.id ??
-                        data.Id
-                    );
+                const normalizedInvitation = {
+                    ...data,
 
-                if (!groupId) {
+                    invitationId:
+                        Number(
+                            data.invitationId ??
+                            data.InvitationId ??
+                            data.id ??
+                            data.Id
+                        ),
+
+                    chatId:
+                        Number(
+                            data.chatId ??
+                            data.ChatId
+                        ),
+
+                    chatName:
+                        data.chatName ??
+                        data.ChatName ??
+                        "Група",
+
+                    createdAt:
+                        data.createdAt ??
+                        data.CreatedAt,
+
+                    sender:
+                        data.sender ??
+                        data.Sender
+                };
+
+                if (
+                    !normalizedInvitation.invitationId
+                ) {
                     return;
                 }
 
-                const members =
-                    Array.isArray(
-                        data.members
-                    )
-                        ? data.members
-                        : Array.isArray(
-                            data.Members
-                        )
-                            ? data.Members
-                            : [];
-
-                const groupChat = {
-                    ...data,
-
-                    id:
-                        groupId,
-
-                    name:
-                        data.name ??
-                        data.Name ??
-                        "Група",
-
-                    isGroup:
-                        true,
-
-                    members,
-
-                    unreadCount:
-                        0
-                };
-
-                setChats(
-                    (previousChats) => {
-                        const safeChats =
+                setGroupInvitations(
+                    (previousInvitations) => {
+                        const safeInvitations =
                             Array.isArray(
-                                previousChats
+                                previousInvitations
                             )
-                                ? previousChats
+                                ? previousInvitations
                                 : [];
 
                         const exists =
-                            safeChats.some(
-                                (chat) =>
+                            safeInvitations.some(
+                                (invitation) =>
                                     Number(
-                                        chat.id
+                                        invitation.invitationId
                                     ) ===
-                                    groupId
+                                    Number(
+                                        normalizedInvitation.invitationId
+                                    )
                             );
 
                         if (exists) {
-                            return safeChats.map(
-                                (chat) =>
-                                    Number(
-                                        chat.id
-                                    ) ===
-                                    groupId
-                                        ? {
-                                            ...chat,
-                                            ...groupChat,
-                                            unreadCount:
-                                                chat.unreadCount ??
-                                                0
-                                        }
-                                        : chat
-                            );
+                            return safeInvitations;
                         }
 
                         return [
-                            ...safeChats,
-                            groupChat
+                            ...safeInvitations,
+                            normalizedInvitation
                         ];
                     }
                 );
+            },
+            []
+        );
+
+
+    // ==========================================
+    // GROUP INVITATION ACCEPTED
+    // ==========================================
+
+    const handleGroupInvitationAccepted =
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
+                }
+
+                // Creator does not need
+                // to modify the chat here.
+                // The member count can be
+                // refreshed later if needed.
             },
             []
         );
@@ -533,8 +571,11 @@ function MessengerPage() {
         onChatRequestAccepted:
             null,
 
-        onGroupChatCreated:
-            handleGroupChatCreated
+        onGroupInvitationReceived:
+            handleGroupInvitationReceived,
+
+        onGroupInvitationAccepted:
+            handleGroupInvitationAccepted
     });
 
 
@@ -655,6 +696,7 @@ function MessengerPage() {
             setSelectedChat(null);
             setMessages([]);
             setChatRequests([]);
+            setGroupInvitations([]);
             setMobileChatOpen(false);
 
             markedAsReadRef.current.clear();
@@ -708,7 +750,19 @@ function MessengerPage() {
 
                     setChatRequests(
                         Array.isArray(data)
-                            ? data
+                            ? data.map(
+                                (request) => ({
+                                    ...request,
+
+                                    requestId:
+                                        Number(
+                                            request.requestId ??
+                                            request.RequestId ??
+                                            request.id ??
+                                            request.Id
+                                        )
+                                })
+                            )
                             : []
                     );
                 } catch (error) {
@@ -722,6 +776,74 @@ function MessengerPage() {
             };
 
         loadChatRequests();
+    }, [token]);
+
+
+    // ==========================================
+    // LOAD GROUP INVITATIONS
+    // ==========================================
+
+    useEffect(() => {
+        if (!token) {
+            setGroupInvitations([]);
+
+            return;
+        }
+
+        const loadGroupInvitations =
+            async () => {
+                try {
+                    const data =
+                        await getGroupInvitations(
+                            token
+                        );
+
+                    const normalized =
+                        Array.isArray(data)
+                            ? data.map(
+                                (invitation) => ({
+                                    ...invitation,
+
+                                    invitationId:
+                                        Number(
+                                            invitation.invitationId ??
+                                            invitation.InvitationId ??
+                                            invitation.id ??
+                                            invitation.Id
+                                        ),
+
+                                    chatId:
+                                        Number(
+                                            invitation.chatId ??
+                                            invitation.ChatId
+                                        ),
+
+                                    chatName:
+                                        invitation.chatName ??
+                                        invitation.ChatName ??
+                                        "Група",
+
+                                    sender:
+                                        invitation.sender ??
+                                        invitation.Sender
+                                })
+                            )
+                            : [];
+
+                    setGroupInvitations(
+                        normalized
+                    );
+                } catch (error) {
+                    console.error(
+                        "Failed to load group invitations:",
+                        error
+                    );
+
+                    setGroupInvitations([]);
+                }
+            };
+
+        loadGroupInvitations();
     }, [token]);
 
 
@@ -961,6 +1083,243 @@ function MessengerPage() {
 
 
     // ==========================================
+    // ACCEPT GROUP INVITATION
+    // ==========================================
+
+    const handleAcceptGroupInvitation =
+        useCallback(
+            async (invitation) => {
+                if (
+                    !token ||
+                    !invitation
+                ) {
+                    return;
+                }
+
+                try {
+                    const result =
+                        await acceptGroupInvitation(
+                            token,
+                            invitation.invitationId
+                        );
+
+                    setGroupInvitations(
+                        (previousInvitations) => {
+                            const safeInvitations =
+                                Array.isArray(
+                                    previousInvitations
+                                )
+                                    ? previousInvitations
+                                    : [];
+
+                            return safeInvitations.filter(
+                                (item) =>
+                                    Number(
+                                        item.invitationId
+                                    ) !==
+                                    Number(
+                                        invitation.invitationId
+                                    )
+                            );
+                        }
+                    );
+
+                    let acceptedChat =
+                        result?.chat;
+
+                    if (!acceptedChat) {
+                        throw new Error(
+                            "Групу не було отримано після прийняття запрошення."
+                        );
+                    }
+
+                    const members =
+                        Array.isArray(
+                            acceptedChat.members
+                        )
+                            ? [
+                                ...acceptedChat.members
+                            ]
+                            : [];
+
+                    const hasCurrentUser =
+                        members.some(
+                            (member) =>
+                                Number(
+                                    member.id ??
+                                    member.userId ??
+                                    member.UserId
+                                ) ===
+                                Number(
+                                    user?.id
+                                )
+                        );
+
+                    if (
+                        !hasCurrentUser &&
+                        user
+                    ) {
+                        members.push({
+                            id:
+                                user.id,
+
+                            nickname:
+                                user.nickname
+                        });
+                    }
+
+                    acceptedChat = {
+                        ...acceptedChat,
+
+                        id:
+                            Number(
+                                acceptedChat.id ??
+                                acceptedChat.Id
+                            ),
+
+                        name:
+                            acceptedChat.name ??
+                            acceptedChat.Name ??
+                            invitation.chatName ??
+                            "Група",
+
+                        isGroup:
+                            true,
+
+                        members,
+
+                        unreadCount:
+                            0
+                    };
+
+                    setChats(
+                        (previousChats) => {
+                            const safeChats =
+                                Array.isArray(
+                                    previousChats
+                                )
+                                    ? previousChats
+                                    : [];
+
+                            const exists =
+                                safeChats.some(
+                                    (chat) =>
+                                        Number(
+                                            chat.id
+                                        ) ===
+                                        Number(
+                                            acceptedChat.id
+                                        )
+                                );
+
+                            if (exists) {
+                                return safeChats.map(
+                                    (chat) =>
+                                        Number(
+                                            chat.id
+                                        ) ===
+                                        Number(
+                                            acceptedChat.id
+                                        )
+                                            ? {
+                                                ...chat,
+                                                ...acceptedChat,
+                                                unreadCount:
+                                                    0
+                                            }
+                                            : chat
+                                );
+                            }
+
+                            return [
+                                ...safeChats,
+                                acceptedChat
+                            ];
+                        }
+                    );
+
+                    // Одразу відкриваємо групу
+                    // без перезавантаження сторінки.
+                    await openChat(
+                        acceptedChat
+                    );
+                } catch (error) {
+                    console.error(
+                        "Failed to accept group invitation:",
+                        error
+                    );
+
+                    alert(
+                        error.message ||
+                        "Не вдалося приєднатися до групи."
+                    );
+                }
+            },
+            [
+                token,
+                user,
+                openChat
+            ]
+        );
+
+
+    // ==========================================
+    // IGNORE GROUP INVITATION
+    // ==========================================
+
+    const handleIgnoreGroupInvitation =
+        useCallback(
+            async (invitation) => {
+                if (
+                    !token ||
+                    !invitation
+                ) {
+                    return;
+                }
+
+                try {
+                    await ignoreGroupInvitation(
+                        token,
+                        invitation.invitationId
+                    );
+
+                    setGroupInvitations(
+                        (previousInvitations) => {
+                            const safeInvitations =
+                                Array.isArray(
+                                    previousInvitations
+                                )
+                                    ? previousInvitations
+                                    : [];
+
+                            return safeInvitations.filter(
+                                (item) =>
+                                    Number(
+                                        item.invitationId
+                                    ) !==
+                                    Number(
+                                        invitation.invitationId
+                                    )
+                            );
+                        }
+                    );
+                } catch (error) {
+                    console.error(
+                        "Failed to ignore group invitation:",
+                        error
+                    );
+
+                    alert(
+                        error.message ||
+                        "Не вдалося проігнорувати запрошення."
+                    );
+                }
+            },
+            [token]
+        );
+
+
+    // ==========================================
     // CLOSE MOBILE CHAT
     // ==========================================
 
@@ -1038,7 +1397,8 @@ function MessengerPage() {
                         members.some(
                             (member) =>
                                 Number(
-                                    member.id
+                                    member.id ??
+                                    member.userId
                                 ) ===
                                 Number(
                                     selectedUser.id
@@ -1061,7 +1421,8 @@ function MessengerPage() {
                         members.some(
                             (member) =>
                                 Number(
-                                    member.id
+                                    member.id ??
+                                    member.userId
                                 ) ===
                                 Number(
                                     user?.id
@@ -1187,7 +1548,8 @@ function MessengerPage() {
                     members.find(
                         (member) =>
                             Number(
-                                member.id
+                                member.id ??
+                                member.userId
                             ) !==
                             Number(
                                 user?.id
@@ -1419,8 +1781,12 @@ function MessengerPage() {
 
                             return safeRequests.filter(
                                 (item) =>
-                                    item.requestId !==
-                                    request.requestId
+                                    Number(
+                                        item.requestId
+                                    ) !==
+                                    Number(
+                                        request.requestId
+                                    )
                             );
                         }
                     );
@@ -1447,7 +1813,8 @@ function MessengerPage() {
                         acceptedMembers.some(
                             (member) =>
                                 Number(
-                                    member.id
+                                    member.id ??
+                                    member.userId
                                 ) ===
                                 Number(
                                     user?.id
@@ -1474,7 +1841,8 @@ function MessengerPage() {
                         acceptedMembers.some(
                             (member) =>
                                 Number(
-                                    member.id
+                                    member.id ??
+                                    member.userId
                                 ) ===
                                 Number(
                                     requestSender?.id
@@ -1601,8 +1969,12 @@ function MessengerPage() {
 
                             return safeRequests.filter(
                                 (item) =>
-                                    item.requestId !==
-                                    request.requestId
+                                    Number(
+                                        item.requestId
+                                    ) !==
+                                    Number(
+                                        request.requestId
+                                    )
                             );
                         }
                     );
@@ -1641,6 +2013,11 @@ function MessengerPage() {
             ? chatRequests
             : [];
 
+    const safeGroupInvitations =
+        Array.isArray(groupInvitations)
+            ? groupInvitations
+            : [];
+
 
     // ==========================================
     // RENDER
@@ -1676,6 +2053,10 @@ function MessengerPage() {
                 />
             }
         >
+
+            {/* =====================================
+                PRIVATE CHAT REQUESTS
+            ====================================== */}
 
             {safeChatRequests.length > 0 && (
                 <div
@@ -1809,6 +2190,157 @@ function MessengerPage() {
                 </div>
             )}
 
+
+            {/* =====================================
+                GROUP INVITATIONS
+            ====================================== */}
+
+            {safeGroupInvitations.length > 0 && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top:
+                            safeChatRequests.length > 0
+                                ? "200px"
+                                : "20px",
+                        right: "20px",
+                        zIndex: 999,
+                        width: "360px",
+                        maxWidth:
+                            "calc(100vw - 40px)",
+                        display: "flex",
+                        flexDirection:
+                            "column",
+                        gap: "12px"
+                    }}
+                >
+                    {safeGroupInvitations.map(
+                        (invitation) => (
+                            <div
+                                key={
+                                    invitation.invitationId
+                                }
+                                style={{
+                                    background:
+                                        "#ffffff",
+                                    border:
+                                        "1px solid #ddd",
+                                    borderRadius:
+                                        "12px",
+                                    padding:
+                                        "16px",
+                                    boxShadow:
+                                        "0 8px 30px rgba(0,0,0,0.15)"
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontWeight:
+                                            "600",
+                                        marginBottom:
+                                            "8px"
+                                    }}
+                                >
+                                    Запрошення до групи
+                                </div>
+
+                                <div
+                                    style={{
+                                        color:
+                                            "#555",
+                                        marginBottom:
+                                            "14px"
+                                    }}
+                                >
+                                    <strong>
+                                        {
+                                            invitation
+                                                .sender
+                                                ?.nickname
+                                        }
+                                    </strong>{" "}
+                                    запросив вас до групи{" "}
+                                    <strong>
+                                        {
+                                            invitation
+                                                .chatName
+                                        }
+                                    </strong>
+                                    .
+                                </div>
+
+                                <div
+                                    style={{
+                                        display:
+                                            "flex",
+                                        gap:
+                                            "8px"
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            handleAcceptGroupInvitation(
+                                                invitation
+                                            )
+                                        }
+                                        style={{
+                                            flex:
+                                                1,
+                                            padding:
+                                                "9px 12px",
+                                            border:
+                                                "none",
+                                            borderRadius:
+                                                "8px",
+                                            cursor:
+                                                "pointer",
+                                            background:
+                                                "#222",
+                                            color:
+                                                "#fff"
+                                        }}
+                                    >
+                                        Приєднатися
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            handleIgnoreGroupInvitation(
+                                                invitation
+                                            )
+                                        }
+                                        style={{
+                                            flex:
+                                                1,
+                                            padding:
+                                                "9px 12px",
+                                            border:
+                                                "1px solid #ddd",
+                                            borderRadius:
+                                                "8px",
+                                            cursor:
+                                                "pointer",
+                                            background:
+                                                "#fff",
+                                            color:
+                                                "#333"
+                                        }}
+                                    >
+                                        Ігнорувати
+                                    </button>
+                                </div>
+                            </div>
+                        )
+                    )}
+                </div>
+            )}
+
+
+            {/* =====================================
+                CHAT
+            ====================================== */}
 
             {selectedChat ? (
                 <>
