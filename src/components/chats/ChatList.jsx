@@ -1,3 +1,4 @@
+
 import ChatItem from "./ChatItem";
 
 function ChatList({
@@ -6,7 +7,10 @@ function ChatList({
     getChatName,
     onSelectChat
 }) {
-    if (!Array.isArray(chats) || chats.length === 0) {
+    if (
+        !Array.isArray(chats) ||
+        chats.length === 0
+    ) {
         return (
             <p
                 style={{
@@ -26,6 +30,9 @@ function ChatList({
                     key={chat.id}
                     chat={chat}
                     name={getChatName(chat)}
+                    unreadCount={
+                        Number(chat.unreadCount) || 0
+                    }
                     selected={
                         selectedChat?.id === chat.id
                     }
@@ -39,3 +46,4 @@ function ChatList({
 }
 
 export default ChatList;
+

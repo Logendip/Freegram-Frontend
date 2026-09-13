@@ -1,6 +1,8 @@
+
 function ChatItem({
     chat,
     name = "Приватний чат",
+    unreadCount = 0,
     selected = false,
     onClick
 }) {
@@ -15,6 +17,9 @@ function ChatItem({
         safeName
             .charAt(0)
             .toUpperCase();
+
+    const safeUnreadCount =
+        Number(unreadCount) || 0;
 
     const handleClick = () => {
         if (onClick) {
@@ -114,6 +119,34 @@ function ChatItem({
                         : "Приватний чат"}
                 </div>
             </div>
+
+
+            {/* Unread count */}
+
+            {safeUnreadCount > 0 && (
+                <div
+                    style={{
+                        flexShrink: 0,
+                        minWidth: "22px",
+                        height: "22px",
+                        padding: "0 6px",
+                        borderRadius: "999px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxSizing: "border-box",
+                        background: "#ef4444",
+                        color: "#ffffff",
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        lineHeight: 1,
+                        boxShadow:
+                            "0 2px 6px rgba(239,68,68,0.25)"
+                    }}
+                >
+                    {safeUnreadCount}
+                </div>
+            )}
 
 
             {/* Arrow */}
