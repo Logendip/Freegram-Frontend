@@ -1,32 +1,35 @@
-import {
-    useState
-} from "react";
+import { useState } from "react";
 
 function MessageInput({
     onSend
 }) {
-    const [value, setValue] =
-        useState("");
-
-    const hasValue =
-        value.trim().length > 0;
+    const [value, setValue] = useState("");
+    const [sending, setSending] = useState(false);
 
     const send = async () => {
-        const content =
-            value.trim();
+        const content = value.trim();
 
-        if (!content) {
+        if (!content || sending) {
             return;
         }
 
-        await onSend(content);
+        try {
+            setSending(true);
 
-        setValue("");
+            await onSend(content);
+
+            setValue("");
+        } catch (error) {
+            console.error(
+                "Failed to send message:",
+                error
+            );
+        } finally {
+            setSending(false);
+        }
     };
 
-    const handleKeyDown = (
-        event
-    ) => {
+    const handleKeyDown = (event) => {
         if (
             event.key === "Enter" &&
             !event.shiftKey
@@ -37,16 +40,15 @@ function MessageInput({
         }
     };
 
+    const hasText = value.trim().length > 0;
+
     return (
         <div
-            className="freegram-message-input"
             style={{
                 display: "flex",
-                alignItems: "flex-end",
-                gap: "9px",
-                padding: "10px 15px",
-                borderTop:
-                    "1px solid #e5e7eb",
+                gap: "10px",
+                padding: "12px 15px",
+                borderTop: "1px solid #ddd",
                 background: "#fff",
                 boxSizing: "border-box"
             }}
@@ -54,150 +56,49 @@ function MessageInput({
             <textarea
                 value={value}
                 onChange={(event) =>
-                    setValue(
-                        event.target.value
-                    )
+                    setValue(event.target.value)
                 }
-                onKeyDown={
-                    handleKeyDown
-                }
+                onKeyDown={handleKeyDown}
                 placeholder="Написати повідомлення..."
                 rows={1}
-                className="freegram-message-textarea"
+                disabled={sending}
                 style={{
                     flex: 1,
                     minWidth: 0,
                     resize: "none",
-                    minHeight: "42px",
-                    maxHeight: "120px",
-                    padding:
-                        "10px 13px",
-                    border:
-                        "1px solid #dfe3e8",
-                    borderRadius: "13px",
-                    fontFamily:
-                        "inherit",
-                    fontSize: "14px",
-                    lineHeight: "20px",
+                    padding: "11px 13px",
+                    border: "1px solid #ddd",
+                    borderRadius: "10px",
+                    fontFamily: "inherit",
                     outline: "none",
-                    background: "#f7f8fa",
-                    color: "#1f2937",
-                    boxSizing: "border-box",
-                    transition:
-                        "background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 120ms ease"
-                }}
-                onFocus={(event) => {
-                    event.currentTarget.style.background =
-                        "#ffffff";
-
-                    event.currentTarget.style.borderColor =
-                        "#a78bfa";
-
-                    event.currentTarget.style.boxShadow =
-                        "0 0 0 3px rgba(124,58,237,0.09)";
-                }}
-                onBlur={(event) => {
-                    event.currentTarget.style.background =
-                        "#f7f8fa";
-
-                    event.currentTarget.style.borderColor =
-                        "#dfe3e8";
-
-                    event.currentTarget.style.boxShadow =
-                        "none";
+                    boxSizing: "border-box"
                 }}
             />
 
             <button
-                type="button"
                 onClick={send}
-                disabled={!hasValue}
-                aria-label="Надіслати повідомлення"
-                className="freegram-send-button"
+                disabled={!hasText || sending}
                 style={{
-                    width: "42px",
-                    height: "42px",
-                    minWidth: "42px",
+                    flexShrink: 0,
+                    padding: "0 20px",
                     border: "none",
-                    borderRadius: "13px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 0,
-                    cursor: hasValue
-                        ? "pointer"
-                        : "default",
-                    background:
-                        hasValue
-                            ? "#6366f1"
-                            : "#e5e7eb",
-                    color: hasValue
-                        ? "#ffffff"
-                        : "#9ca3af",
-                    opacity: hasValue
-                        ? 1
-                        : 0.75,
-                    fontSize: "17px",
+                    borderRadius: "10px",
+                    cursor:
+                        hasText && !sending
+                            ? "pointer"
+                            : "default",
+                    background: "#333",
+                    color: "#fff",
+                    opacity:
+                        hasText && !sending
+                            ? 1
+                            : 0.5,
                     transition:
-                        "transform 120ms ease, background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease",
-                    boxShadow:
-                        hasValue
-                            ? "0 4px 10px rgba(99,102,241,0.22)"
-                            : "none"
+                        "transform 0.15s ease, opacity 0.15s ease"
                 }}
             >
-                ➤
+                {sending ? "..." : "➤"}
             </button>
-
-            <style>
-                {`
-                    .freegram-send-button:not(:disabled):hover {
-                        transform: translateY(-1px);
-                        box-shadow:
-                            0 6px 14px rgba(99,102,241,0.28) !important;
-                    }
-
-                    .freegram-send-button:not(:disabled):active {
-                        transform: scale(0.92);
-                        box-shadow:
-                            0 2px 5px rgba(99,102,241,0.18) !important;
-                    }
-
-                    .freegram-send-button:disabled {
-                        transform: scale(1);
-                    }
-
-                    @media (max-width: 768px) {
-                        .freegram-message-input {
-                            padding:
-                                8px 9px
-                                calc(8px + env(safe-area-inset-bottom))
-                                9px !important;
-                            gap: 7px !important;
-                        }
-
-                        .freegram-message-textarea {
-                            min-height: 44px !important;
-                            border-radius: 14px !important;
-                            font-size: 15px !important;
-                        }
-
-                        .freegram-send-button {
-                            width: 44px !important;
-                            height: 44px !important;
-                            min-width: 44px !important;
-                            border-radius: 14px !important;
-                        }
-                    }
-
-                    @media (prefers-reduced-motion: reduce) {
-                        .freegram-send-button,
-                        .freegram-message-textarea {
-                            transition: none !important;
-                        }
-                    }
-                `}
-            </style>
         </div>
     );
 }
