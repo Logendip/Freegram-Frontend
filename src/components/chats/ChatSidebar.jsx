@@ -9,8 +9,9 @@ import {
     searchUsers
 } from "../../services/api";
 
+
 function ChatSidebar({
-    chats,
+    chats = [],
     selectedChat,
     getChatName,
     onSelectChat,
@@ -30,16 +31,39 @@ function ChatSidebar({
     const [searchError, setSearchError] =
         useState("");
 
+
+    // ==========================================
+    // SAFE CHATS
+    // ==========================================
+
+    const safeChats =
+        Array.isArray(chats)
+            ? chats
+            : [];
+
+
+    // ==========================================
+    // FILTER CHATS
+    // ==========================================
+
     const filteredChats =
-        chats.filter((chat) =>
-            getChatName(chat)
+        safeChats.filter((chat) => {
+            const chatName =
+                getChatName?.(chat) || "";
+
+            return chatName
                 .toLowerCase()
                 .includes(
                     search
                         .toLowerCase()
                         .trim()
-                )
-        );
+                );
+        });
+
+
+    // ==========================================
+    // SEARCH USERS
+    // ==========================================
 
     useEffect(() => {
         const query =
@@ -66,11 +90,20 @@ function ChatSidebar({
                                 query
                             );
 
+                        const safeUsers =
+                            Array.isArray(result)
+                                ? result
+                                : [];
+
                         const filteredUsers =
-                            result.filter(
-                                (user) =>
-                                    user.id !==
-                                    currentUserId
+                            safeUsers.filter(
+                                (foundUser) =>
+                                    Number(
+                                        foundUser.id
+                                    ) !==
+                                    Number(
+                                        currentUserId
+                                    )
                             );
 
                         setUsers(
@@ -102,8 +135,14 @@ function ChatSidebar({
         currentUserId
     ]);
 
+
     const hasSearch =
         search.trim().length > 0;
+
+
+    // ==========================================
+    // RENDER
+    // ==========================================
 
     return (
         <aside
@@ -115,16 +154,21 @@ function ChatSidebar({
                 display: "flex",
                 flexDirection: "column",
                 background: "#ffffff",
-                borderRight: "1px solid #e5e7eb",
+                borderRight:
+                    "1px solid #e5e7eb",
                 boxSizing: "border-box",
                 overflow: "hidden"
             }}
         >
-            {/* Sidebar header */}
+
+            {/* ======================================
+                HEADER
+            ====================================== */}
 
             <div
                 style={{
-                    padding: "20px 18px 16px",
+                    padding:
+                        "20px 18px 16px",
                     flexShrink: 0,
                     background: "#ffffff"
                 }}
@@ -133,7 +177,8 @@ function ChatSidebar({
                     style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
+                        justifyContent:
+                            "space-between",
                         marginBottom: "16px"
                     }}
                 >
@@ -143,7 +188,8 @@ function ChatSidebar({
                             fontSize: "22px",
                             fontWeight: "700",
                             color: "#1f2937",
-                            letterSpacing: "-0.3px"
+                            letterSpacing:
+                                "-0.3px"
                         }}
                     >
                         Чати
@@ -156,7 +202,8 @@ function ChatSidebar({
                             borderRadius: "10px",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "center",
+                            justifyContent:
+                                "center",
                             background:
                                 "linear-gradient(135deg, #7c3aed, #6366f1)",
                             color: "#ffffff",
@@ -170,7 +217,10 @@ function ChatSidebar({
                     </div>
                 </div>
 
-                {/* Search */}
+
+                {/* ==================================
+                    SEARCH
+                ================================== */}
 
                 <div
                     style={{
@@ -186,7 +236,8 @@ function ChatSidebar({
                                 "translateY(-50%)",
                             color: "#9ca3af",
                             fontSize: "15px",
-                            pointerEvents: "none",
+                            pointerEvents:
+                                "none",
                             zIndex: 1
                         }}
                     >
@@ -205,14 +256,17 @@ function ChatSidebar({
                         style={{
                             width: "100%",
                             height: "42px",
-                            boxSizing: "border-box",
+                            boxSizing:
+                                "border-box",
                             padding:
                                 "0 14px 0 38px",
                             border:
                                 "1px solid #e5e7eb",
-                            borderRadius: "12px",
+                            borderRadius:
+                                "12px",
                             outline: "none",
-                            background: "#f3f4f6",
+                            background:
+                                "#f3f4f6",
                             color: "#1f2937",
                             fontSize: "14px",
                             transition:
@@ -242,30 +296,41 @@ function ChatSidebar({
                 </div>
             </div>
 
-            {/* Content */}
+
+            {/* ======================================
+                CONTENT
+            ====================================== */}
 
             <div
+                className="freegram-sidebar-content"
                 style={{
                     flex: 1,
                     minHeight: 0,
                     overflowY: "auto",
                     overflowX: "hidden",
-                    padding: "4px 10px 14px",
-                    boxSizing: "border-box"
+                    padding:
+                        "4px 10px 14px",
+                    boxSizing:
+                        "border-box"
                 }}
-                className="freegram-sidebar-content"
             >
+
                 {hasSearch ? (
                     <>
-                        {/* Users title */}
+                        {/* ==========================
+                            USERS TITLE
+                        ========================== */}
 
                         <div
                             style={{
                                 padding:
                                     "10px 8px 8px",
-                                fontSize: "11px",
-                                fontWeight: "700",
-                                color: "#9ca3af",
+                                fontSize:
+                                    "11px",
+                                fontWeight:
+                                    "700",
+                                color:
+                                    "#9ca3af",
                                 textTransform:
                                     "uppercase",
                                 letterSpacing:
@@ -275,15 +340,20 @@ function ChatSidebar({
                             Користувачі
                         </div>
 
-                        {/* Loading */}
+
+                        {/* ==========================
+                            LOADING
+                        ========================== */}
 
                         {searchLoading && (
                             <div
                                 style={{
                                     padding:
                                         "22px 8px",
-                                    color: "#9ca3af",
-                                    fontSize: "14px",
+                                    color:
+                                        "#9ca3af",
+                                    fontSize:
+                                        "14px",
                                     textAlign:
                                         "center"
                                 }}
@@ -292,7 +362,10 @@ function ChatSidebar({
                             </div>
                         )}
 
-                        {/* Error */}
+
+                        {/* ==========================
+                            ERROR
+                        ========================== */}
 
                         {!searchLoading &&
                             searchError && (
@@ -318,7 +391,10 @@ function ChatSidebar({
                                 </div>
                             )}
 
-                        {/* No users */}
+
+                        {/* ==========================
+                            NO USERS
+                        ========================== */}
 
                         {!searchLoading &&
                             !searchError &&
@@ -335,23 +411,27 @@ function ChatSidebar({
                                             "center"
                                     }}
                                 >
-                                    Користувачів не знайдено.
+                                    Користувачів не
+                                    знайдено.
                                 </div>
                             )}
 
-                        {/* Users */}
+
+                        {/* ==========================
+                            USERS
+                        ========================== */}
 
                         {!searchLoading &&
                             users.map(
-                                (user) => (
+                                (foundUser) => (
                                     <button
                                         key={
-                                            user.id
+                                            foundUser.id
                                         }
                                         type="button"
                                         onClick={() =>
                                             onSelectUser(
-                                                user
+                                                foundUser
                                             )
                                         }
                                         className="freegram-user-result"
@@ -396,6 +476,7 @@ function ChatSidebar({
                                                 "transparent";
                                         }}
                                     >
+
                                         {/* Avatar */}
 
                                         <div
@@ -426,14 +507,16 @@ function ChatSidebar({
                                                     "0 2px 6px rgba(99,102,241,0.18)"
                                             }}
                                         >
-                                            {user.nickname
+                                            {foundUser
+                                                .nickname
                                                 ?.charAt(
                                                     0
                                                 )
                                                 .toUpperCase()}
                                         </div>
 
-                                        {/* User information */}
+
+                                        {/* User info */}
 
                                         <div
                                             style={{
@@ -459,7 +542,7 @@ function ChatSidebar({
                                                 }}
                                             >
                                                 {
-                                                    user.nickname
+                                                    foundUser.nickname
                                                 }
                                             </div>
 
@@ -493,11 +576,15 @@ function ChatSidebar({
                                         >
                                             ›
                                         </span>
+
                                     </button>
                                 )
                             )}
 
-                        {/* Chats title */}
+
+                        {/* ==========================
+                            CHATS TITLE
+                        ========================== */}
 
                         <div
                             style={{
@@ -522,7 +609,10 @@ function ChatSidebar({
                             Ваші чати
                         </div>
 
-                        {/* Filtered chats */}
+
+                        {/* ==========================
+                            FILTERED CHATS
+                        ========================== */}
 
                         {filteredChats.length > 0 ? (
                             <ChatList
@@ -572,7 +662,13 @@ function ChatSidebar({
                         }
                     />
                 )}
+
             </div>
+
+
+            {/* ======================================
+                STYLES
+            ====================================== */}
 
             <style>
                 {`
@@ -605,6 +701,7 @@ function ChatSidebar({
                     }
                 `}
             </style>
+
         </aside>
     );
 }
