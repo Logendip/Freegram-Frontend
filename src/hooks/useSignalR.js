@@ -18,15 +18,22 @@ const API_BASE_URL =
 
 export function useSignalR({
     token,
+
     onReceiveMessage,
     onMessageRead,
+
     onMessageDeletedForEveryone,
     onMessageDeletedForMe,
+
     onChatDeleted,
+
     onChatRequestCreated,
     onChatRequestAccepted,
+    onChatRequestRejected,
+
     onGroupInvitationReceived,
     onGroupInvitationAccepted,
+
     onGroupMemberAdded,
     onGroupMemberRemoved
 }) {
@@ -38,13 +45,19 @@ export function useSignalR({
         useRef({
             onReceiveMessage,
             onMessageRead,
+
             onMessageDeletedForEveryone,
             onMessageDeletedForMe,
+
             onChatDeleted,
+
             onChatRequestCreated,
             onChatRequestAccepted,
+            onChatRequestRejected,
+
             onGroupInvitationReceived,
             onGroupInvitationAccepted,
+
             onGroupMemberAdded,
             onGroupMemberRemoved
         });
@@ -66,26 +79,38 @@ export function useSignalR({
         callbacksRef.current = {
             onReceiveMessage,
             onMessageRead,
+
             onMessageDeletedForEveryone,
             onMessageDeletedForMe,
+
             onChatDeleted,
+
             onChatRequestCreated,
             onChatRequestAccepted,
+            onChatRequestRejected,
+
             onGroupInvitationReceived,
             onGroupInvitationAccepted,
+
             onGroupMemberAdded,
             onGroupMemberRemoved
         };
     }, [
         onReceiveMessage,
         onMessageRead,
+
         onMessageDeletedForEveryone,
         onMessageDeletedForMe,
+
         onChatDeleted,
+
         onChatRequestCreated,
         onChatRequestAccepted,
+        onChatRequestRejected,
+
         onGroupInvitationReceived,
         onGroupInvitationAccepted,
+
         onGroupMemberAdded,
         onGroupMemberRemoved
     ]);
@@ -224,6 +249,26 @@ export function useSignalR({
 
 
         // ==========================================
+        // PRIVATE CHAT REQUEST REJECTED
+        // ==========================================
+
+        connection.on(
+            "ChatRequestRejected",
+            (data) => {
+                console.log(
+                    "ChatRequestRejected received:",
+                    data
+                );
+
+                callbacksRef.current
+                    .onChatRequestRejected?.(
+                        data
+                    );
+            }
+        );
+
+
+        // ==========================================
         // GROUP INVITATION RECEIVED
         // ==========================================
 
@@ -288,6 +333,10 @@ export function useSignalR({
         // ==========================================
 
         connection.onreconnecting(() => {
+            console.log(
+                "SignalR reconnecting..."
+            );
+
             setConnectionState(
                 HubConnectionState.Reconnecting
             );
@@ -295,6 +344,10 @@ export function useSignalR({
 
 
         connection.onreconnected(() => {
+            console.log(
+                "SignalR reconnected."
+            );
+
             setConnectionState(
                 HubConnectionState.Connected
             );
@@ -302,6 +355,10 @@ export function useSignalR({
 
 
         connection.onclose(() => {
+            console.log(
+                "SignalR connection closed."
+            );
+
             setConnectionState(
                 HubConnectionState.Disconnected
             );
@@ -374,9 +431,9 @@ export function useSignalR({
 
                 if (
                     connection.state ===
-                    HubConnectionState.Connecting ||
+                        HubConnectionState.Connecting ||
                     connection.state ===
-                    HubConnectionState.Reconnecting
+                        HubConnectionState.Reconnecting
                 ) {
                     await new Promise(
                         (resolve, reject) => {
@@ -411,6 +468,7 @@ export function useSignalR({
                                         );
                                     }
                                 };
+
 
                             check();
                         }
