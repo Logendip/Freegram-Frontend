@@ -24,7 +24,8 @@ export function useSignalR({
     onChatRequestCreated,
     onChatRequestAccepted,
     onGroupInvitationReceived,
-    onGroupInvitationAccepted
+    onGroupInvitationAccepted,
+    onGroupMemberRemoved
 }) {
     const connectionRef =
         useRef(null);
@@ -39,7 +40,8 @@ export function useSignalR({
             onChatRequestCreated,
             onChatRequestAccepted,
             onGroupInvitationReceived,
-            onGroupInvitationAccepted
+            onGroupInvitationAccepted,
+            onGroupMemberRemoved
         });
 
     const [
@@ -64,7 +66,8 @@ export function useSignalR({
             onChatRequestCreated,
             onChatRequestAccepted,
             onGroupInvitationReceived,
-            onGroupInvitationAccepted
+            onGroupInvitationAccepted,
+            onGroupMemberRemoved
         };
     }, [
         onReceiveMessage,
@@ -75,7 +78,8 @@ export function useSignalR({
         onChatRequestCreated,
         onChatRequestAccepted,
         onGroupInvitationReceived,
-        onGroupInvitationAccepted
+        onGroupInvitationAccepted,
+        onGroupMemberRemoved
     ]);
 
 
@@ -233,6 +237,21 @@ export function useSignalR({
             (data) => {
                 callbacksRef.current
                     .onGroupInvitationAccepted?.(
+                        data
+                    );
+            }
+        );
+
+
+        // ==========================================
+        // GROUP MEMBER REMOVED
+        // ==========================================
+
+        connection.on(
+            "GroupMemberRemoved",
+            (data) => {
+                callbacksRef.current
+                    .onGroupMemberRemoved?.(
                         data
                     );
             }

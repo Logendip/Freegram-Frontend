@@ -15,7 +15,8 @@ import {
     rejectChatRequest,
     getGroupInvitations,
     acceptGroupInvitation,
-    ignoreGroupInvitation
+    ignoreGroupInvitation,
+    removeGroupMember
 } from "../services/api";
 
 import { useAuth } from "../contexts/AuthContext";
@@ -537,6 +538,187 @@ function MessengerPage() {
 
 
     // ==========================================
+    // GROUP MEMBER REMOVED
+    // ==========================================
+
+    const handleGroupMemberRemoved =
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
+                }
+
+                const chatId =
+                    Number(
+                        data.chatId ??
+                        data.ChatId
+                    );
+
+                const removedUserId =
+                    Number(
+                        data.userId ??
+                        data.UserId
+                    );
+
+                const currentUserId =
+                    Number(
+                        user?.id
+                    );
+
+                if (
+                    !chatId ||
+                    !removedUserId
+                ) {
+                    return;
+                }
+
+
+                // ==================================
+                // CURRENT USER WAS REMOVED
+                // ==================================
+
+                if (
+                    removedUserId ===
+                    currentUserId
+                ) {
+                    setChats(
+                        (previousChats) => {
+                            const safeChats =
+                                Array.isArray(
+                                    previousChats
+                                )
+                                    ? previousChats
+                                    : [];
+
+                            return safeChats.filter(
+                                (chat) =>
+                                    Number(
+                                        chat.id
+                                    ) !==
+                                    chatId
+                            );
+                        }
+                    );
+
+                    setSelectedChat(
+                        (previousChat) => {
+                            if (
+                                Number(
+                                    previousChat?.id
+                                ) ===
+                                chatId
+                            ) {
+                                return null;
+                            }
+
+                            return previousChat;
+                        }
+                    );
+
+                    setMessages([]);
+
+                    markedAsReadRef.current.clear();
+
+                    setMobileChatOpen(false);
+
+                    return;
+                }
+
+
+                // ==================================
+                // ANOTHER MEMBER WAS REMOVED
+                // ==================================
+
+                setChats(
+                    (previousChats) => {
+                        const safeChats =
+                            Array.isArray(
+                                previousChats
+                            )
+                                ? previousChats
+                                : [];
+
+                        return safeChats.map(
+                            (chat) => {
+                                if (
+                                    Number(
+                                        chat.id
+                                    ) !==
+                                    chatId
+                                ) {
+                                    return chat;
+                                }
+
+                                if (
+                                    !Array.isArray(
+                                        chat.members
+                                    )
+                                ) {
+                                    return chat;
+                                }
+
+                                return {
+                                    ...chat,
+
+                                    members:
+                                        chat.members.filter(
+                                            (member) =>
+                                                Number(
+                                                    member.id ??
+                                                    member.userId ??
+                                                    member.UserId
+                                                ) !==
+                                                removedUserId
+                                        )
+                                };
+                            }
+                        );
+                    }
+                );
+
+
+                setSelectedChat(
+                    (previousChat) => {
+                        if (
+                            !previousChat ||
+                            Number(
+                                previousChat.id
+                            ) !==
+                            chatId
+                        ) {
+                            return previousChat;
+                        }
+
+                        if (
+                            !Array.isArray(
+                                previousChat.members
+                            )
+                        ) {
+                            return previousChat;
+                        }
+
+                        return {
+                            ...previousChat,
+
+                            members:
+                                previousChat.members.filter(
+                                    (member) =>
+                                        Number(
+                                            member.id ??
+                                            member.userId ??
+                                            member.UserId
+                                        ) !==
+                                        removedUserId
+                                )
+                        };
+                    }
+                );
+            },
+            [user]
+        );
+
+
+    // ==========================================
     // SIGNALR
     // ==========================================
 
@@ -575,7 +757,10 @@ function MessengerPage() {
             handleGroupInvitationReceived,
 
         onGroupInvitationAccepted:
-            handleGroupInvitationAccepted
+            handleGroupInvitationAccepted,
+
+        onGroupMemberRemoved:
+            handleGroupMemberRemoved
     });
 
 
@@ -1238,8 +1423,6 @@ function MessengerPage() {
                         }
                     );
 
-                    // Одразу відкриваємо групу
-                    // без перезавантаження сторінки.
                     await openChat(
                         acceptedChat
                     );
@@ -1316,6 +1499,75 @@ function MessengerPage() {
                 }
             },
             [token]
+        );
+
+
+    // ==========================================
+    // REMOVE GROUP MEMBER
+    // ==========================================
+
+    const handleRemoveGroupMember =
+        useCallback(
+            async (userId) => {
+                if (
+                    !token ||
+                    !selectedChat ||
+                    !selectedChat.isGroup
+                ) {
+                    return;
+                }
+
+                const currentUserId =
+                    Number(
+                        user?.id
+                    );
+
+                const targetUserId =
+                    Number(
+                        userId
+                    );
+
+                if (
+                    !targetUserId ||
+                    targetUserId ===
+                        currentUserId
+                ) {
+                    return;
+                }
+
+                const isCreator =
+                    Number(
+                        selectedChat.creatorId
+                    ) ===
+                    currentUserId;
+
+                if (!isCreator) {
+                    return;
+                }
+
+                try {
+                    await removeGroupMember(
+                        token,
+                        selectedChat.id,
+                        targetUserId
+                    );
+                } catch (error) {
+                    console.error(
+                        "Failed to remove group member:",
+                        error
+                    );
+
+                    alert(
+                        error.message ||
+                        "Не вдалося видалити учасника з групи."
+                    );
+                }
+            },
+            [
+                token,
+                selectedChat,
+                user
+            ]
         );
 
 
@@ -2348,12 +2600,39 @@ function MessengerPage() {
                         name={getChatName(
                             selectedChat
                         )}
+
                         isGroup={
                             selectedChat.isGroup
                         }
+
+                        members={
+                            selectedChat.members ?? []
+                        }
+
+                        currentUserId={
+                            user?.id
+                        }
+
+                        isGroupCreator={
+                            Boolean(
+                                selectedChat.isGroup &&
+                                Number(
+                                    selectedChat.creatorId
+                                ) ===
+                                    Number(
+                                        user?.id
+                                    )
+                            )
+                        }
+
+                        onRemoveGroupMember={
+                            handleRemoveGroupMember
+                        }
+
                         onDeleteChat={
                             handleDeleteChat
                         }
+
                         onBack={
                             closeMobileChat
                         }

@@ -115,6 +115,27 @@ export async function createGroupChat(
 
 
 // ==========================================
+// DELETE GROUP MEMBER
+// ==========================================
+
+export async function removeGroupMember(
+    token,
+    chatId,
+    userId
+) {
+    return request(
+        `/api/Chats/group/${chatId}/members/${userId}`,
+        {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+}
+
+
+// ==========================================
 // DELETE CHAT
 // ==========================================
 
