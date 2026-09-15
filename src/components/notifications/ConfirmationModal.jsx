@@ -1,10 +1,10 @@
+
 function ConfirmationModal({
     open,
     title,
     message,
     confirmText = "Підтвердити",
     cancelText = "Скасувати",
-    info = false,
     danger = false,
     onConfirm,
     onCancel
@@ -13,11 +13,13 @@ function ConfirmationModal({
         return null;
     }
 
+
     const handleConfirm = () => {
         if (onConfirm) {
             onConfirm();
         }
     };
+
 
     const handleCancel = () => {
         if (onCancel) {
@@ -25,15 +27,20 @@ function ConfirmationModal({
         }
     };
 
+
     return (
         <div
             style={{
                 position: "fixed",
+
                 inset: 0,
+
                 zIndex: 3000,
 
                 display: "flex",
+
                 alignItems: "center",
+
                 justifyContent: "center",
 
                 padding: "20px",
@@ -60,6 +67,7 @@ function ConfirmationModal({
             <div
                 style={{
                     width: "100%",
+
                     maxWidth: "440px",
 
                     background: "#ffffff",
@@ -79,9 +87,12 @@ function ConfirmationModal({
                     event.stopPropagation();
                 }}
             >
+                {/* HEADER */}
+
                 <div
                     style={{
                         display: "flex",
+
                         alignItems: "center",
 
                         gap: "12px",
@@ -92,6 +103,7 @@ function ConfirmationModal({
                     <div
                         style={{
                             width: "42px",
+
                             height: "42px",
 
                             minWidth: "42px",
@@ -99,34 +111,27 @@ function ConfirmationModal({
                             borderRadius: "50%",
 
                             display: "flex",
+
                             alignItems: "center",
+
                             justifyContent: "center",
 
-                            background:
-                                danger
-                                    ? "#fee2e2"
-                                    : info
-                                        ? "#dbeafe"
-                                        : "#f3f4f6",
+                            background: danger
+                                ? "#fee2e2"
+                                : "#f3f4f6",
 
-                            color:
-                                danger
-                                    ? "#dc2626"
-                                    : info
-                                        ? "#2563eb"
-                                        : "#374151",
+                            color: danger
+                                ? "#dc2626"
+                                : "#374151",
 
                             fontSize: "20px",
 
                             fontWeight: "700"
                         }}
                     >
-                        {danger
-                            ? "!"
-                            : info
-                                ? "i"
-                                : "?"}
+                        {danger ? "!" : "?"}
                     </div>
+
 
                     <h3
                         style={{
@@ -142,6 +147,9 @@ function ConfirmationModal({
                         {title}
                     </h3>
                 </div>
+
+
+                {/* MESSAGE */}
 
                 <div
                     style={{
@@ -159,89 +167,75 @@ function ConfirmationModal({
                     {message}
                 </div>
 
+
+                {/* BUTTONS */}
+
                 <div
                     style={{
                         display: "flex",
 
-                        justifyContent:
-                            "flex-end",
+                        justifyContent: "flex-end",
 
                         gap: "10px"
                     }}
                 >
-                    {!info && (
-                        <button
-                            type="button"
+                    <button
+                        type="button"
 
-                            onClick={
-                                handleCancel
-                            }
+                        onClick={handleCancel}
 
-                            style={{
-                                border: "none",
+                        style={{
+                            border: "1px solid #d1d5db",
 
-                                padding:
-                                    "10px 18px",
+                            background: "#ffffff",
 
-                                borderRadius: "10px",
+                            color: "#374151",
 
-                                background:
-                                    "#f3f4f6",
+                            borderRadius: "10px",
 
-                                color:
-                                    "#374151",
+                            padding: "10px 16px",
 
-                                fontSize: "14px",
+                            fontSize: "14px",
 
-                                fontWeight: "600",
+                            fontWeight: "600",
 
-                                cursor: "pointer",
+                            cursor: "pointer",
 
-                                transition:
-                                    "background 0.15s ease"
-                            }}
+                            transition:
+                                "background 0.15s ease"
+                        }}
 
-                            onMouseEnter={(
-                                event
-                            ) => {
-                                event.currentTarget.style.background =
-                                    "#e5e7eb";
-                            }}
+                        onMouseEnter={(event) => {
+                            event.currentTarget.style.background =
+                                "#f3f4f6";
+                        }}
 
-                            onMouseLeave={(
-                                event
-                            ) => {
-                                event.currentTarget.style.background =
-                                    "#f3f4f6";
-                            }}
-                        >
-                            {cancelText}
-                        </button>
-                    )}
+                        onMouseLeave={(event) => {
+                            event.currentTarget.style.background =
+                                "#ffffff";
+                        }}
+                    >
+                        {cancelText}
+                    </button>
+
 
                     <button
                         type="button"
 
-                        onClick={
-                            info
-                                ? handleCancel
-                                : handleConfirm
-                        }
+                        onClick={handleConfirm}
 
                         style={{
                             border: "none",
 
-                            padding:
-                                "10px 18px",
+                            background: danger
+                                ? "#dc2626"
+                                : "#2563eb",
+
+                            color: "#ffffff",
 
                             borderRadius: "10px",
 
-                            background:
-                                danger
-                                    ? "#dc2626"
-                                    : "#2563eb",
-
-                            color: "#ffffff",
+                            padding: "10px 16px",
 
                             fontSize: "14px",
 
@@ -253,26 +247,21 @@ function ConfirmationModal({
                                 "opacity 0.15s ease"
                         }}
 
-                        onMouseEnter={(
-                            event
-                        ) => {
+                        onMouseEnter={(event) => {
                             event.currentTarget.style.opacity =
                                 "0.88";
                         }}
 
-                        onMouseLeave={(
-                            event
-                        ) => {
+                        onMouseLeave={(event) => {
                             event.currentTarget.style.opacity =
                                 "1";
                         }}
                     >
-                        {info
-                            ? "Зрозуміло"
-                            : confirmText}
+                        {confirmText}
                     </button>
                 </div>
             </div>
+
 
             <style>
                 {`
@@ -290,15 +279,15 @@ function ConfirmationModal({
                         from {
                             opacity: 0;
                             transform:
-                                scale(0.94)
-                                translateY(10px);
+                                translateY(12px)
+                                scale(0.97);
                         }
 
                         to {
                             opacity: 1;
                             transform:
-                                scale(1)
-                                translateY(0);
+                                translateY(0)
+                                scale(1);
                         }
                     }
                 `}
@@ -306,5 +295,6 @@ function ConfirmationModal({
         </div>
     );
 }
+
 
 export default ConfirmationModal;

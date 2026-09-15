@@ -1,6 +1,6 @@
+
 function NotificationContainer({
-    notifications = [],
-    onRemove
+    notifications = []
 }) {
     if (
         !Array.isArray(notifications) ||
@@ -10,188 +10,312 @@ function NotificationContainer({
     }
 
 
-    const getIcon =
+    const getNotificationStyle =
         (type) => {
             switch (type) {
-                case "chat-request":
-                    return "💬";
-
-                case "chat-request-rejected":
-                    return "💬";
-
-                case "group-invitation":
-                    return "👥";
-
-                case "group-invitation-rejected":
-                    return "👥";
-
                 case "success":
-                    return "✓";
+                    return {
+                        icon: "✓",
+                        iconBackground: "#dcfce7",
+                        iconColor: "#16a34a"
+                    };
 
                 case "error":
-                    return "⚠️";
+                    return {
+                        icon: "!",
+                        iconBackground: "#fee2e2",
+                        iconColor: "#dc2626"
+                    };
 
+                case "warning":
+                    return {
+                        icon: "!",
+                        iconBackground: "#fef3c7",
+                        iconColor: "#d97706"
+                    };
+
+                case "chat-request":
+                    return {
+                        icon: "💬",
+                        iconBackground: "#dbeafe",
+                        iconColor: "#2563eb"
+                    };
+
+                case "chat-request-rejected":
+                    return {
+                        icon: "💬",
+                        iconBackground: "#fee2e2",
+                        iconColor: "#dc2626"
+                    };
+
+                case "group-invitation":
+                    return {
+                        icon: "👥",
+                        iconBackground: "#ede9fe",
+                        iconColor: "#7c3aed"
+                    };
+
+                case "group-invitation-rejected":
+                    return {
+                        icon: "👥",
+                        iconBackground: "#fee2e2",
+                        iconColor: "#dc2626"
+                    };
+
+                case "info":
                 default:
-                    return "🔔";
+                    return {
+                        icon: "i",
+                        iconBackground: "#dbeafe",
+                        iconColor: "#2563eb"
+                    };
             }
         };
 
 
     return (
-        <div
-            style={{
-                position: "fixed",
+        <>
+            <div
+                style={{
+                    position: "fixed",
 
-                top: "20px",
+                    top: "20px",
 
-                right: "20px",
+                    right: "20px",
 
-                zIndex: 3000,
+                    zIndex: 3000,
 
-                width: "360px",
+                    width: "380px",
 
-                maxWidth:
-                    "calc(100vw - 40px)",
+                    maxWidth:
+                        "calc(100vw - 40px)",
 
-                display: "flex",
+                    display: "flex",
 
-                flexDirection: "column",
+                    flexDirection:
+                        "column",
 
-                gap: "10px",
+                    gap: "10px",
 
-                pointerEvents: "none"
-            }}
-        >
-            {notifications.map(
-                (notification) => (
-                    <div
-                        key={
-                            notification.id
-                        }
-
-                        style={{
-                            background:
-                                "#ffffff",
-
-                            color: "#222",
-
-                            border:
-                                "1px solid #ddd",
-
-                            borderRadius:
-                                "14px",
-
-                            padding:
-                                "14px 16px",
-
-                            boxShadow:
-                                "0 8px 30px rgba(0,0,0,0.18)",
-
-                            display: "flex",
-
-                            alignItems:
-                                "flex-start",
-
-                            gap: "10px",
-
-                            pointerEvents:
-                                "auto"
-                        }}
-                    >
-                        <div
-                            style={{
-                                fontSize:
-                                    "20px",
-
-                                lineHeight:
-                                    "1"
-                            }}
-                        >
-                            {getIcon(
+                    pointerEvents: "none"
+                }}
+            >
+                {notifications.map(
+                    (
+                        notification
+                    ) => {
+                        const style =
+                            getNotificationStyle(
                                 notification.type
-                            )}
-                        </div>
+                            );
 
-
-                        <div
-                            style={{
-                                flex: 1
-                            }}
-                        >
+                        return (
                             <div
-                                style={{
-                                    fontWeight:
-                                        "600",
-
-                                    fontSize:
-                                        "14px",
-
-                                    marginBottom:
-                                        "3px"
-                                }}
-                            >
-                                {
-                                    notification.title
+                                key={
+                                    notification.id
                                 }
-                            </div>
 
-
-                            <div
                                 style={{
-                                    fontSize:
-                                        "14px",
+                                    position:
+                                        "relative",
 
-                                    lineHeight:
-                                        "1.4",
+                                    display:
+                                        "flex",
+
+                                    alignItems:
+                                        "flex-start",
+
+                                    gap: "12px",
+
+                                    padding:
+                                        "15px 17px",
+
+                                    background:
+                                        "#ffffff",
 
                                     color:
-                                        "#555"
+                                        "#111827",
+
+                                    border:
+                                        "1px solid #e5e7eb",
+
+                                    borderRadius:
+                                        "15px",
+
+                                    boxShadow:
+                                        "0 10px 35px rgba(0, 0, 0, 0.16)",
+
+                                    pointerEvents:
+                                        "none",
+
+                                    animation:
+                                        "notificationAppear 0.25s ease-out",
+
+                                    overflow:
+                                        "hidden"
                                 }}
                             >
-                                {
-                                    notification.message
-                                }
+                                {/* ================================= */}
+                                {/* ICON */}
+                                {/* ================================= */}
+
+                                <div
+                                    style={{
+                                        width:
+                                            "40px",
+
+                                        height:
+                                            "40px",
+
+                                        minWidth:
+                                            "40px",
+
+                                        borderRadius:
+                                            "50%",
+
+                                        display:
+                                            "flex",
+
+                                        alignItems:
+                                            "center",
+
+                                        justifyContent:
+                                            "center",
+
+                                        background:
+                                            style.iconBackground,
+
+                                        color:
+                                            style.iconColor,
+
+                                        fontSize:
+                                            "18px",
+
+                                        fontWeight:
+                                            "700",
+
+                                        lineHeight:
+                                            "1"
+                                    }}
+                                >
+                                    {
+                                        style.icon
+                                    }
+                                </div>
+
+
+                                {/* ================================= */}
+                                {/* CONTENT */}
+                                {/* ================================= */}
+
+                                <div
+                                    style={{
+                                        flex: 1,
+
+                                        minWidth:
+                                            0,
+
+                                        paddingTop:
+                                            "1px"
+                                    }}
+                                >
+                                    {notification.title && (
+                                        <div
+                                            style={{
+                                                fontSize:
+                                                    "14px",
+
+                                                fontWeight:
+                                                    "700",
+
+                                                color:
+                                                    "#111827",
+
+                                                lineHeight:
+                                                    "1.35",
+
+                                                marginBottom:
+                                                    notification.message
+                                                        ? "4px"
+                                                        : "0"
+                                            }}
+                                        >
+                                            {
+                                                notification.title
+                                            }
+                                        </div>
+                                    )}
+
+
+                                    {notification.message && (
+                                        <div
+                                            style={{
+                                                fontSize:
+                                                    "14px",
+
+                                                lineHeight:
+                                                    "1.45",
+
+                                                color:
+                                                    "#4b5563",
+
+                                                whiteSpace:
+                                                    "pre-line",
+
+                                                overflowWrap:
+                                                    "anywhere"
+                                            }}
+                                        >
+                                            {
+                                                notification.message
+                                            }
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        );
+                    }
+                )}
+            </div>
 
 
-                        <button
-                            type="button"
+            {/* ===================================== */}
+            {/* ANIMATIONS */}
+            {/* ===================================== */}
 
-                            onClick={() =>
-                                onRemove?.(
-                                    notification.id
-                                )
-                            }
+            <style>
+                {`
+                    @keyframes notificationAppear {
+                        from {
+                            opacity: 0;
+                            transform:
+                                translateX(30px)
+                                scale(0.96);
+                        }
 
-                            style={{
-                                border:
-                                    "none",
+                        to {
+                            opacity: 1;
+                            transform:
+                                translateX(0)
+                                scale(1);
+                        }
+                    }
 
-                                background:
-                                    "transparent",
-
-                                cursor:
-                                    "pointer",
-
-                                fontSize:
-                                    "16px",
-
-                                color:
-                                    "#888",
-
-                                padding:
-                                    "0"
-                            }}
-                        >
-                            ×
-                        </button>
-                    </div>
-                )
-            )}
-        </div>
+                    @media (max-width: 600px) {
+                        .notification-container-mobile {
+                            left: 15px;
+                            right: 15px;
+                            top: 15px;
+                            width: auto;
+                            max-width: none;
+                        }
+                    }
+                `}
+            </style>
+        </>
     );
 }
 
 
 export default NotificationContainer;
+
