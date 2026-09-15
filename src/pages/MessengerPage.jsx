@@ -24,6 +24,8 @@ import { useAuth } from "../contexts/AuthContext";
 
 import { useSignalR } from "../hooks/useSignalR";
 
+import { useNotifications } from "../hooks/useNotifications";
+
 import MessengerLayout from "../components/layout/MessengerLayout";
 
 import ChatSidebar from "../components/chats/ChatSidebar";
@@ -32,10 +34,26 @@ import ChatHeader from "../components/chat/ChatHeader";
 import MessageList from "../components/chat/MessageList";
 import MessageInput from "../components/chat/MessageInput";
 
+import NotificationContainer
+    from "../components/notifications/NotificationContainer";
+
+import ChatRequestCard
+    from "../components/notifications/ChatRequestCard";
+
+import GroupInvitationCard
+    from "../components/notifications/GroupInvitationCard";
+
+import ConfirmationModal
+    from "../components/notifications/ConfirmationModal";
+
 
 function MessengerPage() {
     const { user, token } = useAuth();
 
+
+    // ==========================================
+    // STATE
+    // ==========================================
 
     const [chats, setChats] =
         useState([]);
@@ -52,12 +70,101 @@ function MessengerPage() {
     const [groupInvitations, setGroupInvitations] =
         useState([]);
 
-    const [notifications, setNotifications] =
-        useState([]);
-
     const [mobileChatOpen, setMobileChatOpen] =
         useState(false);
 
+
+    // ==========================================
+    // NOTIFICATIONS
+    // ==========================================
+
+    const {
+        notifications,
+        notify,
+        removeNotification,
+        clearNotifications
+    } = useNotifications();
+
+
+    // ==========================================
+    // MODAL
+    // ==========================================
+
+    const [modal, setModal] =
+        useState({
+            open: false,
+            title: "",
+            message: "",
+            type: "info",
+            confirmText: "Підтвердити",
+            onConfirm: null
+        });
+
+
+    // ==========================================
+    // MODAL HELPERS
+    // ==========================================
+
+    const closeModal =
+        useCallback(() => {
+            setModal({
+                open: false,
+                title: "",
+                message: "",
+                type: "info",
+                confirmText: "Підтвердити",
+                onConfirm: null
+            });
+        }, []);
+
+
+    const showInfoModal =
+        useCallback(
+            ({
+                title,
+                message
+            }) => {
+                setModal({
+                    open: true,
+                    title,
+                    message,
+                    type: "info",
+                    confirmText: "Зрозуміло",
+                    onConfirm: null
+                });
+            },
+            []
+        );
+
+
+    const showConfirmModal =
+        useCallback(
+            ({
+                title,
+                message,
+                confirmText = "Підтвердити",
+                onConfirm,
+                danger = false
+            }) => {
+                setModal({
+                    open: true,
+                    title,
+                    message,
+                    type:
+                        danger
+                            ? "danger"
+                            : "confirm",
+                    confirmText,
+                    onConfirm
+                });
+            },
+            []
+        );
+
+
+    // ==========================================
+    // READ MESSAGE TRACKING
+    // ==========================================
 
     const markedAsReadRef =
         useRef(new Set());
@@ -532,7 +639,11 @@ function MessengerPage() {
                         }
 
                         setMessages([]);
-                        setMobileChatOpen(false);
+
+                        setMobileChatOpen(
+                            false
+                        );
+
                         markedAsReadRef.current.clear();
 
                         return null;
@@ -695,14 +806,18 @@ function MessengerPage() {
                 );
 
 
-                if (
-                    data.userId ??
-                    data.UserId
-                ) {
-                    return;
-                }
+                notify({
+                    type: "success",
+                    title: "Запит прийнято",
+                    message:
+                        "Користувач прийняв ваше запрошення до чату.",
+                    duration: 4000
+                });
             },
-            [normalizeChat]
+            [
+                normalizeChat,
+                notify
+            ]
         );
 
 
@@ -722,36 +837,14 @@ function MessengerPage() {
                     data.Message ??
                     "Користувач відхилив ваше запрошення.";
 
-                const notificationId =
-                    Date.now() +
-                    Math.random();
-
-
-                setNotifications(
-                    (previousNotifications) => [
-                        ...previousNotifications,
-                        {
-                            id:
-                                notificationId,
-
-                            message
-                        }
-                    ]
-                );
-
-
-                setTimeout(() => {
-                    setNotifications(
-                        (previousNotifications) =>
-                            previousNotifications.filter(
-                                (notification) =>
-                                    notification.id !==
-                                    notificationId
-                            )
-                    );
-                }, 5000);
+                notify({
+                    type: "warning",
+                    title: "Запрошення відхилено",
+                    message,
+                    duration: 5000
+                });
             },
-            []
+            [notify]
         );
 
 
@@ -846,14 +939,67 @@ function MessengerPage() {
 
     const handleGroupInvitationAccepted =
         useCallback(
-            () => {
-                // Backend sends this event
-                // to the group creator.
-                //
-                // The actual member update
-                // comes through GroupMemberAdded.
+            (data) => {
+                if (!data) {
+                    return;
+                }
+
+                const userData =
+                    data.user ??
+                    data.User;
+
+                const nickname =
+                    userData?.nickname ??
+                    userData?.Nickname ??
+                    "Користувач";
+
+                const groupName =
+                    data.groupName ??
+                    data.GroupName ??
+                    "групи";
+
+                notify({
+                    type: "success",
+                    title: "Запрошення прийнято",
+                    message:
+                        `${nickname} приєднався до групи ${groupName}.`,
+                    duration: 5000
+                });
             },
-            []
+            [notify]
+        );
+
+
+    // ==========================================
+    // GROUP INVITATION REJECTED
+    // ==========================================
+
+    const handleGroupInvitationRejected =
+        useCallback(
+            (data) => {
+                if (!data) {
+                    return;
+                }
+
+                const nickname =
+                    data.nickname ??
+                    data.Nickname ??
+                    "Користувач";
+
+                const groupName =
+                    data.groupName ??
+                    data.GroupName ??
+                    "групи";
+
+                showInfoModal({
+                    title:
+                        "Запрошення відхилено",
+
+                    message:
+                        `${nickname} відмовився приєднатися до групи "${groupName}".`
+                });
+            },
+            [showInfoModal]
         );
 
 
@@ -910,10 +1056,6 @@ function MessengerPage() {
                     return;
                 }
 
-
-                // ==================================
-                // CURRENT USER WAS ADDED
-                // ==================================
 
                 if (
                     addedUserId ===
@@ -972,10 +1114,6 @@ function MessengerPage() {
                     return;
                 }
 
-
-                // ==================================
-                // ANOTHER USER WAS ADDED
-                // ==================================
 
                 const normalizedUser = {
                     id:
@@ -1164,7 +1302,11 @@ function MessengerPage() {
                                 chatId
                             ) {
                                 setMessages([]);
-                                setMobileChatOpen(false);
+
+                                setMobileChatOpen(
+                                    false
+                                );
+
                                 markedAsReadRef.current.clear();
 
                                 return null;
@@ -1297,6 +1439,9 @@ function MessengerPage() {
 
         onGroupInvitationAccepted:
             handleGroupInvitationAccepted,
+
+        onGroupInvitationRejected:
+            handleGroupInvitationRejected,
 
         onGroupMemberAdded:
             handleGroupMemberAdded,
@@ -1431,8 +1576,11 @@ function MessengerPage() {
             setMessages([]);
             setChatRequests([]);
             setGroupInvitations([]);
-            setNotifications([]);
             setMobileChatOpen(false);
+
+            clearNotifications();
+
+            closeModal();
 
             markedAsReadRef.current.clear();
 
@@ -1466,13 +1614,24 @@ function MessengerPage() {
                     );
 
                     setChats([]);
+
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            "Не вдалося завантажити список чатів.",
+                        duration: 5000
+                    });
                 }
             };
 
         loadChats();
     }, [
         token,
-        normalizeChat
+        normalizeChat,
+        notify,
+        clearNotifications,
+        closeModal
     ]);
 
 
@@ -1533,11 +1692,22 @@ function MessengerPage() {
                     );
 
                     setChatRequests([]);
+
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            "Не вдалося завантажити запити на чати.",
+                        duration: 5000
+                    });
                 }
             };
 
         loadChatRequests();
-    }, [token]);
+    }, [
+        token,
+        notify
+    ]);
 
 
     // ==========================================
@@ -1605,11 +1775,22 @@ function MessengerPage() {
                     );
 
                     setGroupInvitations([]);
+
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            "Не вдалося завантажити запрошення до груп.",
+                        duration: 5000
+                    });
                 }
             };
 
         loadGroupInvitations();
-    }, [token]);
+    }, [
+        token,
+        notify
+    ]);
 
 
     // ==========================================
@@ -1707,6 +1888,7 @@ function MessengerPage() {
 
                     setMobileChatOpen(true);
 
+
                     await joinChat(
                         normalizedChat.id
                     );
@@ -1752,6 +1934,15 @@ function MessengerPage() {
                     );
 
                     setMessages([]);
+
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося відкрити чат.",
+                        duration: 5000
+                    });
                 }
             },
             [
@@ -1759,7 +1950,8 @@ function MessengerPage() {
                 selectedChat,
                 joinChat,
                 leaveChat,
-                normalizeChat
+                normalizeChat,
+                notify
             ]
         );
 
@@ -1953,16 +2145,21 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося приєднатися до групи."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося приєднатися до групи.",
+                        duration: 5000
+                    });
                 }
             },
             [
                 token,
                 openChat,
-                normalizeChat
+                normalizeChat,
+                notify
             ]
         );
 
@@ -2006,13 +2203,20 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося відхилити запрошення."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося відхилити запрошення.",
+                        duration: 5000
+                    });
                 }
             },
-            [token]
+            [
+                token,
+                notify
+            ]
         );
 
 
@@ -2214,9 +2418,13 @@ function MessengerPage() {
                     // ==================================
 
                     if (!chat) {
-                        alert(
-                            "Запрошення на чат надіслано. Очікуємо на відповідь користувача."
-                        );
+                        showInfoModal({
+                            title:
+                                "Запрошення надіслано",
+
+                            message:
+                                "Запрошення на чат надіслано. Очікуємо на відповідь користувача."
+                        });
 
                         return;
                     }
@@ -2293,16 +2501,22 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося відправити запрошення."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося відправити запрошення.",
+                        duration: 5000
+                    });
                 }
             },
             [
                 token,
                 openChat,
-                normalizeChat
+                normalizeChat,
+                notify,
+                showInfoModal
             ]
         );
 
@@ -2377,15 +2591,20 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося відправити повідомлення."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося відправити повідомлення.",
+                        duration: 5000
+                    });
                 }
             },
             [
                 selectedChat,
-                sendMessage
+                sendMessage,
+                notify
             ]
         );
 
@@ -2415,15 +2634,20 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося видалити повідомлення."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося видалити повідомлення.",
+                        duration: 5000
+                    });
                 }
             },
             [
                 selectedChat,
-                deleteMessageForEveryone
+                deleteMessageForEveryone,
+                notify
             ]
         );
 
@@ -2453,15 +2677,20 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося видалити повідомлення."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося видалити повідомлення.",
+                        duration: 5000
+                    });
                 }
             },
             [
                 selectedChat,
-                deleteMessageForMe
+                deleteMessageForMe,
+                notify
             ]
         );
 
@@ -2525,8 +2754,12 @@ function MessengerPage() {
 
 
                     setSelectedChat(null);
+
                     setMessages([]);
-                    setMobileChatOpen(false);
+
+                    setMobileChatOpen(
+                        false
+                    );
 
                     markedAsReadRef.current.clear();
                 } catch (error) {
@@ -2535,14 +2768,73 @@ function MessengerPage() {
                         error
                     );
 
-                    throw error;
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося видалити чат.",
+                        duration: 5000
+                    });
                 }
             },
             [
                 selectedChat,
                 token,
                 user,
-                leaveChat
+                leaveChat,
+                notify
+            ]
+        );
+
+
+    // ==========================================
+    // REQUEST DELETE CHAT
+    // ==========================================
+
+    const handleRequestDeleteChat =
+        useCallback(
+            () => {
+                if (
+                    !selectedChat ||
+                    !token
+                ) {
+                    return;
+                }
+
+                const chatName =
+                    getChatName(
+                        selectedChat
+                    );
+
+                showConfirmModal({
+                    title:
+                        "Видалити чат?",
+
+                    message:
+                        `Видалити всю переписку з "${chatName}"?`,
+
+                    confirmText:
+                        "Видалити",
+
+                    danger:
+                        true,
+
+                    onConfirm:
+                        async () => {
+                            closeModal();
+
+                            await handleDeleteChat();
+                        }
+                });
+            },
+            [
+                selectedChat,
+                token,
+                getChatName,
+                showConfirmModal,
+                closeModal,
+                handleDeleteChat
             ]
         );
 
@@ -2651,16 +2943,21 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося прийняти запит."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося прийняти запит.",
+                        duration: 5000
+                    });
                 }
             },
             [
                 token,
                 openChat,
-                normalizeChat
+                normalizeChat,
+                notify
             ]
         );
 
@@ -2704,13 +3001,20 @@ function MessengerPage() {
                         error
                     );
 
-                    alert(
-                        error.message ||
-                        "Не вдалося видалити запит."
-                    );
+                    notify({
+                        type: "error",
+                        title: "Помилка",
+                        message:
+                            error.message ||
+                            "Не вдалося відхилити запит.",
+                        duration: 5000
+                    });
                 }
             },
-            [token]
+            [
+                token,
+                notify
+            ]
         );
 
 
@@ -2792,115 +3096,57 @@ function MessengerPage() {
         >
 
             {/* =====================================
-                SIGNALR NOTIFICATIONS
+                NOTIFICATIONS
             ====================================== */}
 
-            {safeNotifications.length > 0 && (
-                <div
-                    style={{
-                        position:
-                            "fixed",
+            <NotificationContainer
+                notifications={
+                    safeNotifications
+                }
 
-                        top:
-                            "20px",
+                onRemove={
+                    removeNotification
+                }
+            />
 
-                        right:
-                            "20px",
 
-                        zIndex:
-                            2000,
+            {/* =====================================
+                CUSTOM MODAL
+            ====================================== */}
 
-                        width:
-                            "360px",
+            <ConfirmationModal
+                open={
+                    modal.open
+                }
 
-                        maxWidth:
-                            "calc(100vw - 40px)",
+                title={
+                    modal.title
+                }
 
-                        display:
-                            "flex",
+                message={
+                    modal.message
+                }
 
-                        flexDirection:
-                            "column",
+                confirmText={
+                    modal.confirmText
+                }
 
-                        gap:
-                            "10px",
+                info={
+                    modal.type === "info"
+                }
 
-                        pointerEvents:
-                            "none"
-                    }}
-                >
-                    {safeNotifications.map(
-                        (notification) => (
-                            <div
-                                key={
-                                    notification.id
-                                }
+                danger={
+                    modal.type === "danger"
+                }
 
-                                style={{
-                                    background:
-                                        "#ffffff",
+                onConfirm={
+                    modal.onConfirm
+                }
 
-                                    color:
-                                        "#222",
-
-                                    border:
-                                        "1px solid #ddd",
-
-                                    borderRadius:
-                                        "12px",
-
-                                    padding:
-                                        "14px 16px",
-
-                                    boxShadow:
-                                        "0 8px 30px rgba(0,0,0,0.18)",
-
-                                    display:
-                                        "flex",
-
-                                    alignItems:
-                                        "flex-start",
-
-                                    gap:
-                                        "10px",
-
-                                    pointerEvents:
-                                        "auto"
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontSize:
-                                            "20px",
-
-                                        lineHeight:
-                                            "1"
-                                    }}
-                                >
-                                    🔔
-                                </div>
-
-                                <div
-                                    style={{
-                                        flex:
-                                            1,
-
-                                        fontSize:
-                                            "14px",
-
-                                        lineHeight:
-                                            "1.4"
-                                    }}
-                                >
-                                    {
-                                        notification.message
-                                    }
-                                </div>
-                            </div>
-                        )
-                    )}
-                </div>
-            )}
+                onCancel={
+                    closeModal
+                }
+            />
 
 
             {/* =====================================
@@ -2920,7 +3166,7 @@ function MessengerPage() {
                             "20px",
 
                         zIndex:
-                            1000,
+                            1500,
 
                         width:
                             "360px",
@@ -2935,7 +3181,10 @@ function MessengerPage() {
                             "column",
 
                         gap:
-                            "12px"
+                            "12px",
+
+                        pointerEvents:
+                            "none"
                     }}
                 >
                     {safeChatRequests.map(
@@ -2946,135 +3195,23 @@ function MessengerPage() {
                                 }
 
                                 style={{
-                                    background:
-                                        "#ffffff",
-
-                                    border:
-                                        "1px solid #ddd",
-
-                                    borderRadius:
-                                        "12px",
-
-                                    padding:
-                                        "16px",
-
-                                    boxShadow:
-                                        "0 8px 30px rgba(0,0,0,0.15)"
+                                    pointerEvents:
+                                        "auto"
                                 }}
                             >
-                                <div
-                                    style={{
-                                        fontWeight:
-                                            "600",
+                                <ChatRequestCard
+                                    request={
+                                        request
+                                    }
 
-                                        marginBottom:
-                                            "8px"
-                                    }}
-                                >
-                                    Новий запит на чат
-                                </div>
+                                    onAccept={
+                                        handleAcceptChatRequest
+                                    }
 
-                                <div
-                                    style={{
-                                        color:
-                                            "#555",
-
-                                        marginBottom:
-                                            "14px"
-                                    }}
-                                >
-                                    <strong>
-                                        {
-                                            request
-                                                .sender
-                                                ?.nickname ??
-                                            request
-                                                .sender
-                                                ?.Nickname
-                                        }
-                                    </strong>{" "}
-                                    хоче почати з вами чат.
-                                </div>
-
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-
-                                        gap:
-                                            "8px"
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-
-                                        onClick={() =>
-                                            handleAcceptChatRequest(
-                                                request
-                                            )
-                                        }
-
-                                        style={{
-                                            flex:
-                                                1,
-
-                                            padding:
-                                                "9px 12px",
-
-                                            border:
-                                                "none",
-
-                                            borderRadius:
-                                                "8px",
-
-                                            cursor:
-                                                "pointer",
-
-                                            background:
-                                                "#222",
-
-                                            color:
-                                                "#fff"
-                                        }}
-                                    >
-                                        Залишити чат
-                                    </button>
-
-                                    <button
-                                        type="button"
-
-                                        onClick={() =>
-                                            handleRejectChatRequest(
-                                                request
-                                            )
-                                        }
-
-                                        style={{
-                                            flex:
-                                                1,
-
-                                            padding:
-                                                "9px 12px",
-
-                                            border:
-                                                "1px solid #ddd",
-
-                                            borderRadius:
-                                                "8px",
-
-                                            cursor:
-                                                "pointer",
-
-                                            background:
-                                                "#fff",
-
-                                            color:
-                                                "#333"
-                                        }}
-                                    >
-                                        Видалити
-                                    </button>
-                                </div>
+                                    onReject={
+                                        handleRejectChatRequest
+                                    }
+                                />
                             </div>
                         )
                     )}
@@ -3094,14 +3231,14 @@ function MessengerPage() {
 
                         top:
                             safeChatRequests.length > 0
-                                ? "200px"
+                                ? "230px"
                                 : "20px",
 
                         right:
                             "20px",
 
                         zIndex:
-                            999,
+                            1400,
 
                         width:
                             "360px",
@@ -3116,7 +3253,10 @@ function MessengerPage() {
                             "column",
 
                         gap:
-                            "12px"
+                            "12px",
+
+                        pointerEvents:
+                            "none"
                     }}
                 >
                     {safeGroupInvitations.map(
@@ -3127,181 +3267,23 @@ function MessengerPage() {
                                 }
 
                                 style={{
-                                    background:
-                                        "#ffffff",
-
-                                    border:
-                                        "1px solid #ddd",
-
-                                    borderRadius:
-                                        "12px",
-
-                                    padding:
-                                        "16px",
-
-                                    boxShadow:
-                                        "0 8px 30px rgba(0,0,0,0.15)"
+                                    pointerEvents:
+                                        "auto"
                                 }}
                             >
+                                <GroupInvitationCard
+                                    invitation={
+                                        invitation
+                                    }
 
-                                {/* TITLE */}
+                                    onAccept={
+                                        handleAcceptGroupInvitation
+                                    }
 
-                                <div
-                                    style={{
-                                        fontWeight:
-                                            "600",
-
-                                        fontSize:
-                                            "16px",
-
-                                        marginBottom:
-                                            "8px"
-                                    }}
-                                >
-                                    👥 Запрошення до групи
-                                </div>
-
-
-                                {/* DESCRIPTION */}
-
-                                <div
-                                    style={{
-                                        color:
-                                            "#555",
-
-                                        fontSize:
-                                            "14px",
-
-                                        lineHeight:
-                                            "1.5",
-
-                                        marginBottom:
-                                            "14px"
-                                    }}
-                                >
-                                    <strong>
-                                        {
-                                            invitation
-                                                .sender
-                                                ?.nickname ??
-                                            invitation
-                                                .sender
-                                                ?.Nickname ??
-                                            "Користувач"
-                                        }
-                                    </strong>{" "}
-                                    запрошує вас до групи{" "}
-                                    <strong>
-                                        {
-                                            invitation
-                                                .chatName ||
-                                            "Група"
-                                        }
-                                    </strong>.
-                                </div>
-
-
-                                {/* BUTTONS */}
-
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-
-                                        gap:
-                                            "8px"
-                                    }}
-                                >
-
-                                    {/* ACCEPT */}
-
-                                    <button
-                                        type="button"
-
-                                        onClick={() =>
-                                            handleAcceptGroupInvitation(
-                                                invitation
-                                            )
-                                        }
-
-                                        style={{
-                                            flex:
-                                                1,
-
-                                            padding:
-                                                "9px 12px",
-
-                                            border:
-                                                "none",
-
-                                            borderRadius:
-                                                "8px",
-
-                                            cursor:
-                                                "pointer",
-
-                                            background:
-                                                "#222",
-
-                                            color:
-                                                "#fff",
-
-                                            fontSize:
-                                                "14px",
-
-                                            fontWeight:
-                                                "500"
-                                        }}
-                                    >
-                                        Прийняти
-                                    </button>
-
-
-                                    {/* REJECT */}
-
-                                    <button
-                                        type="button"
-
-                                        onClick={() =>
-                                            handleIgnoreGroupInvitation(
-                                                invitation
-                                            )
-                                        }
-
-                                        style={{
-                                            flex:
-                                                1,
-
-                                            padding:
-                                                "9px 12px",
-
-                                            border:
-                                                "1px solid #ddd",
-
-                                            borderRadius:
-                                                "8px",
-
-                                            cursor:
-                                                "pointer",
-
-                                            background:
-                                                "#fff",
-
-                                            color:
-                                                "#333",
-
-                                            fontSize:
-                                                "14px",
-
-                                            fontWeight:
-                                                "500"
-                                        }}
-                                    >
-                                        Відхилити
-                                    </button>
-
-                                </div>
-
+                                    onReject={
+                                        handleIgnoreGroupInvitation
+                                    }
+                                />
                             </div>
                         )
                     )}
@@ -3363,7 +3345,7 @@ function MessengerPage() {
                         }
 
                         onDeleteChat={
-                            handleDeleteChat
+                            handleRequestDeleteChat
                         }
 
                         onBack={
