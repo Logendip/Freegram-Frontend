@@ -33,6 +33,7 @@ export function useSignalR({
 
     onGroupInvitationReceived,
     onGroupInvitationAccepted,
+    onGroupInvitationRejected,
 
     onGroupMemberAdded,
     onGroupMemberRemoved
@@ -57,6 +58,7 @@ export function useSignalR({
 
             onGroupInvitationReceived,
             onGroupInvitationAccepted,
+            onGroupInvitationRejected,
 
             onGroupMemberAdded,
             onGroupMemberRemoved
@@ -91,6 +93,7 @@ export function useSignalR({
 
             onGroupInvitationReceived,
             onGroupInvitationAccepted,
+            onGroupInvitationRejected,
 
             onGroupMemberAdded,
             onGroupMemberRemoved
@@ -110,6 +113,7 @@ export function useSignalR({
 
         onGroupInvitationReceived,
         onGroupInvitationAccepted,
+        onGroupInvitationRejected,
 
         onGroupMemberAdded,
         onGroupMemberRemoved
@@ -299,6 +303,26 @@ export function useSignalR({
 
 
         // ==========================================
+        // GROUP INVITATION REJECTED
+        // ==========================================
+
+        connection.on(
+            "GroupInvitationRejected",
+            (data) => {
+                console.log(
+                    "GroupInvitationRejected received:",
+                    data
+                );
+
+                callbacksRef.current
+                    .onGroupInvitationRejected?.(
+                        data
+                    );
+            }
+        );
+
+
+        // ==========================================
         // GROUP MEMBER ADDED
         // ==========================================
 
@@ -416,11 +440,13 @@ export function useSignalR({
                 const connection =
                     connectionRef.current;
 
+
                 if (!connection) {
                     throw new Error(
                         "SignalR connection is not initialized."
                     );
                 }
+
 
                 if (
                     connection.state ===
@@ -428,6 +454,7 @@ export function useSignalR({
                 ) {
                     return connection;
                 }
+
 
                 if (
                     connection.state ===
@@ -474,8 +501,10 @@ export function useSignalR({
                         }
                     );
 
+
                     return connection;
                 }
+
 
                 throw new Error(
                     "SignalR is not connected."
@@ -514,6 +543,7 @@ export function useSignalR({
                 const connection =
                     connectionRef.current;
 
+
                 if (
                     !connection ||
                     connection.state !==
@@ -521,6 +551,7 @@ export function useSignalR({
                 ) {
                     return;
                 }
+
 
                 await connection.invoke(
                     "LeaveChat",
@@ -543,6 +574,7 @@ export function useSignalR({
             ) => {
                 const connection =
                     await waitForConnection();
+
 
                 await connection.invoke(
                     "SendMessage",
@@ -567,6 +599,7 @@ export function useSignalR({
                 const connection =
                     await waitForConnection();
 
+
                 await connection.invoke(
                     "MarkMessageAsRead",
                     chatId,
@@ -590,6 +623,7 @@ export function useSignalR({
                 const connection =
                     await waitForConnection();
 
+
                 await connection.invoke(
                     "DeleteMessageForEveryone",
                     chatId,
@@ -612,6 +646,7 @@ export function useSignalR({
             ) => {
                 const connection =
                     await waitForConnection();
+
 
                 await connection.invoke(
                     "DeleteMessageForMe",
