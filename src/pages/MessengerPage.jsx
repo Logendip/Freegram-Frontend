@@ -507,6 +507,46 @@ function MessengerPage() {
 
 
     // ==========================================
+    // PRIVATE CHAT REQUEST ACCEPTED
+    // ==========================================
+
+    const handleChatRequestAccepted =
+        useCallback(
+            async (data) => {
+                if (!token) {
+                    return;
+                }
+
+                try {
+                    const updatedChats =
+                        await getChats(
+                            token
+                        );
+
+                    setChats(
+                        Array.isArray(
+                            updatedChats
+                        )
+                            ? updatedChats
+                            : []
+                    );
+
+                    console.log(
+                        "ChatRequestAccepted received. Chats refreshed:",
+                        data
+                    );
+                } catch (error) {
+                    console.error(
+                        "Failed to refresh chats after request acceptance:",
+                        error
+                    );
+                }
+            },
+            [token]
+        );
+
+
+    // ==========================================
     // PRIVATE CHAT REQUEST REJECTED
     // ==========================================
 
@@ -1247,7 +1287,7 @@ function MessengerPage() {
             handleChatRequestCreated,
 
         onChatRequestAccepted:
-            null,
+            handleChatRequestAccepted,
 
         onChatRequestRejected:
             handleChatRequestRejected,
@@ -1960,11 +2000,13 @@ function MessengerPage() {
                         "Failed to accept group invitation:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося приєднатися до групи.",
+                        message:
+                            error.message ||
+                            "Не вдалося приєднатися до групи.",
                         duration: 5000
                     });
                 }
@@ -2022,11 +2064,13 @@ function MessengerPage() {
                         "Failed to ignore group invitation:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося проігнорувати запрошення.",
+                        message:
+                            error.message ||
+                            "Не вдалося проігнорувати запрошення.",
                         duration: 5000
                     });
                 }
@@ -2223,6 +2267,7 @@ function MessengerPage() {
                             selectedUser.id
                         );
 
+
                     // ==========================================
                     // CHAT ALREADY EXISTS
                     // ==========================================
@@ -2238,12 +2283,14 @@ function MessengerPage() {
                         notify({
                             type: "info",
                             title: "Запрошення надіслано",
-                            message: "Очікуємо на відповідь користувача.",
+                            message:
+                                "Очікуємо на відповідь користувача.",
                             duration: 5000
                         });
 
                         return;
                     }
+
 
                     const existingMembers =
                         Array.isArray(
@@ -2314,6 +2361,7 @@ function MessengerPage() {
                             0
                     };
 
+
                     setChats(
                         (previousChats) => {
                             const safeChats =
@@ -2361,6 +2409,7 @@ function MessengerPage() {
                         }
                     );
 
+
                     await openChat(
                         chat
                     );
@@ -2369,11 +2418,13 @@ function MessengerPage() {
                         "Failed to open private chat:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося відправити запрошення.",
+                        message:
+                            error.message ||
+                            "Не вдалося відправити запрошення.",
                         duration: 5000
                     });
                 }
@@ -2384,6 +2435,7 @@ function MessengerPage() {
                 openChat
             ]
         );
+
 
     // ==========================================
     // GET CHAT NAME
@@ -2458,11 +2510,13 @@ function MessengerPage() {
                         "Failed to send message:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося відправити повідомлення.",
+                        message:
+                            error.message ||
+                            "Не вдалося відправити повідомлення.",
                         duration: 5000
                     });
                 }
@@ -2498,11 +2552,13 @@ function MessengerPage() {
                         "Failed to delete message for everyone:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося видалити повідомлення.",
+                        message:
+                            error.message ||
+                            "Не вдалося видалити повідомлення.",
                         duration: 5000
                     });
                 }
@@ -2538,11 +2594,13 @@ function MessengerPage() {
                         "Failed to delete message for me:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося видалити повідомлення.",
+                        message:
+                            error.message ||
+                            "Не вдалося видалити повідомлення.",
                         duration: 5000
                     });
                 }
@@ -2654,36 +2712,42 @@ function MessengerPage() {
             }
 
             const chatName =
-                getChatName(selectedChat);
+                getChatName(
+                    selectedChat
+                );
 
             showConfirmModal({
                 title: "Видалити чат?",
-                message: `Видалити всю переписку з "${chatName}"?`,
+                message:
+                    `Видалити всю переписку з "${chatName}"?`,
                 confirmText: "Видалити",
                 danger: true,
-                onConfirm: async () => {
-                    closeModal();
 
-                    try {
-                        await handleDeleteChat();
-                    } catch (error) {
-                        console.error(
-                            "Failed to delete chat:",
-                            error
-                        );
+                onConfirm:
+                    async () => {
+                        closeModal();
 
-                        notify({
-                            type: "error",
-                            title: "Помилка",
-                            message:
-                                error.message ||
-                                "Не вдалося видалити чат.",
-                            duration: 5000
-                        });
+                        try {
+                            await handleDeleteChat();
+                        } catch (error) {
+                            console.error(
+                                "Failed to delete chat:",
+                                error
+                            );
+
+                            notify({
+                                type: "error",
+                                title: "Помилка",
+                                message:
+                                    error.message ||
+                                    "Не вдалося видалити чат.",
+                                duration: 5000
+                            });
+                        }
                     }
-                }
             });
-        }, [
+        },
+        [
             selectedChat,
             token,
             getChatName,
@@ -2691,7 +2755,8 @@ function MessengerPage() {
             closeModal,
             handleDeleteChat,
             notify
-        ]);
+        ]
+    );
 
 
     // ==========================================
@@ -2701,7 +2766,10 @@ function MessengerPage() {
     const handleAcceptChatRequest =
         useCallback(
             async (request) => {
-                if (!token || !request) {
+                if (
+                    !token ||
+                    !request
+                ) {
                     return;
                 }
 
@@ -2882,11 +2950,13 @@ function MessengerPage() {
                         "Failed to accept chat request:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося прийняти запит.",
+                        message:
+                            error.message ||
+                            "Не вдалося прийняти запит.",
                         duration: 5000
                     });
                 }
@@ -2894,7 +2964,8 @@ function MessengerPage() {
             [
                 token,
                 user,
-                openChat
+                openChat,
+                notify
             ]
         );
 
@@ -2906,7 +2977,10 @@ function MessengerPage() {
     const handleRejectChatRequest =
         useCallback(
             async (request) => {
-                if (!token || !request) {
+                if (
+                    !token ||
+                    !request
+                ) {
                     return;
                 }
 
@@ -2942,16 +3016,21 @@ function MessengerPage() {
                         "Failed to reject chat request:",
                         error
                     );
+
                     notify({
                         type: "error",
                         title: "Помилка",
-                        message: error.message ||
-                        "Не вдалося видалити запит.",
+                        message:
+                            error.message ||
+                            "Не вдалося видалити запит.",
                         duration: 5000
                     });
                 }
             },
-            [token]
+            [
+                token,
+                notify
+            ]
         );
 
 
@@ -2987,443 +3066,564 @@ function MessengerPage() {
     return (
         <>
             <NotificationContainer
-                notifications={notifications}
+                notifications={
+                    notifications
+                }
             />
 
             <ConfirmationModal
-                open={modal.open}
-                title={modal.title}
-                message={modal.message}
-                confirmText={modal.confirmText}
-                danger={modal.danger}
-                onConfirm={modal.onConfirm}
-                onCancel={closeModal}
+                open={
+                    modal.open
+                }
+
+                title={
+                    modal.title
+                }
+
+                message={
+                    modal.message
+                }
+
+                confirmText={
+                    modal.confirmText
+                }
+
+                danger={
+                    modal.danger
+                }
+
+                onConfirm={
+                    modal.onConfirm
+                }
+
+                onCancel={
+                    closeModal
+                }
             />
 
+
             <MessengerLayout
-            mobileChatOpen={
-                mobileChatOpen
-            }
+                mobileChatOpen={
+                    mobileChatOpen
+                }
 
-            sidebar={
-                <ChatSidebar
-                    chats={safeChats}
-                    selectedChat={
-                        selectedChat
-                    }
-                    getChatName={
-                        getChatName
-                    }
-                    onSelectChat={
-                        openChat
-                    }
-                    token={token}
-                    currentUserId={
-                        user?.id
-                    }
-                    onSelectUser={
-                        handleSelectUser
-                    }
-                    onGroupCreated={
-                        handleGroupCreated
-                    }
-                />
-            }
-        >
+                sidebar={
+                    <ChatSidebar
+                        chats={
+                            safeChats
+                        }
 
-            {/* =====================================
-                PRIVATE CHAT REQUESTS
-            ====================================== */}
-
-            {safeChatRequests.length > 0 && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: "20px",
-                        right: "20px",
-                        zIndex: 1000,
-                        width: "360px",
-                        maxWidth:
-                            "calc(100vw - 40px)",
-                        display: "flex",
-                        flexDirection:
-                            "column",
-                        gap: "12px"
-                    }}
-                >
-                    {safeChatRequests.map(
-                        (request) => (
-                            <div
-                                key={
-                                    request.requestId
-                                }
-                                style={{
-                                    background:
-                                        "#ffffff",
-                                    border:
-                                        "1px solid #ddd",
-                                    borderRadius:
-                                        "12px",
-                                    padding:
-                                        "16px",
-                                    boxShadow:
-                                        "0 8px 30px rgba(0,0,0,0.15)"
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontWeight:
-                                            "600",
-                                        marginBottom:
-                                            "8px"
-                                    }}
-                                >
-                                    Новий запит на чат
-                                </div>
-
-                                <div
-                                    style={{
-                                        color:
-                                            "#555",
-                                        marginBottom:
-                                            "14px"
-                                    }}
-                                >
-                                    <strong>
-                                        {
-                                            request
-                                                .sender
-                                                ?.nickname
-                                        }
-                                    </strong>{" "}
-                                    хоче почати з вами чат.
-                                </div>
-
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-                                        gap:
-                                            "8px"
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleAcceptChatRequest(
-                                                request
-                                            )
-                                        }
-                                        style={{
-                                            flex:
-                                                1,
-                                            padding:
-                                                "9px 12px",
-                                            border:
-                                                "none",
-                                            borderRadius:
-                                                "8px",
-                                            cursor:
-                                                "pointer",
-                                            background:
-                                                "#222",
-                                            color:
-                                                "#fff"
-                                        }}
-                                    >
-                                        Залишити чат
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleRejectChatRequest(
-                                                request
-                                            )
-                                        }
-                                        style={{
-                                            flex:
-                                                1,
-                                            padding:
-                                                "9px 12px",
-                                            border:
-                                                "1px solid #ddd",
-                                            borderRadius:
-                                                "8px",
-                                            cursor:
-                                                "pointer",
-                                            background:
-                                                "#fff",
-                                            color:
-                                                "#333"
-                                        }}
-                                    >
-                                        Видалити
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    )}
-                </div>
-            )}
-
-
-            {/* =====================================
-                GROUP INVITATIONS
-            ====================================== */}
-
-            {safeGroupInvitations.length > 0 && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top:
-                            safeChatRequests.length > 0
-                                ? "200px"
-                                : "20px",
-                        right: "20px",
-                        zIndex: 999,
-                        width: "360px",
-                        maxWidth:
-                            "calc(100vw - 40px)",
-                        display: "flex",
-                        flexDirection:
-                            "column",
-                        gap:
-                            "12px"
-                    }}
-                >
-                    {safeGroupInvitations.map(
-                        (invitation) => (
-                            <div
-                                key={
-                                    invitation.invitationId
-                                }
-                                style={{
-                                    background:
-                                        "#ffffff",
-                                    border:
-                                        "1px solid #ddd",
-                                    borderRadius:
-                                        "12px",
-                                    padding:
-                                        "16px",
-                                    boxShadow:
-                                        "0 8px 30px rgba(0,0,0,0.15)"
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        fontWeight:
-                                            "600",
-                                        marginBottom:
-                                            "8px"
-                                    }}
-                                >
-                                    Запрошення до групи
-                                </div>
-
-                                <div
-                                    style={{
-                                        color:
-                                            "#555",
-                                        marginBottom:
-                                            "14px"
-                                    }}
-                                >
-                                    <strong>
-                                        {
-                                            invitation
-                                                .sender
-                                                ?.nickname
-                                        }
-                                    </strong>{" "}
-                                    запросив вас до групи{" "}
-                                    <strong>
-                                        {
-                                            invitation
-                                                .chatName
-                                        }
-                                    </strong>
-                                    .
-                                </div>
-
-                                <div
-                                    style={{
-                                        display:
-                                            "flex",
-                                        gap:
-                                            "8px"
-                                    }}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleAcceptGroupInvitation(
-                                                invitation
-                                            )
-                                        }
-                                        style={{
-                                            flex:
-                                                1,
-                                            padding:
-                                                "9px 12px",
-                                            border:
-                                                "none",
-                                            borderRadius:
-                                                "8px",
-                                            cursor:
-                                                "pointer",
-                                            background:
-                                                "#222",
-                                            color:
-                                                "#fff"
-                                        }}
-                                    >
-                                        Приєднатися
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleIgnoreGroupInvitation(
-                                                invitation
-                                            )
-                                        }
-                                        style={{
-                                            flex:
-                                                1,
-                                            padding:
-                                                "9px 12px",
-                                            border:
-                                                "1px solid #ddd",
-                                            borderRadius:
-                                                "8px",
-                                            cursor:
-                                                "pointer",
-                                            background:
-                                                "#fff",
-                                            color:
-                                                "#333"
-                                        }}
-                                    >
-                                        Ігнорувати
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    )}
-                </div>
-            )}
-
-
-            {/* =====================================
-                CHAT
-            ====================================== */}
-
-            {selectedChat ? (
-                <>
-                    <ChatHeader
-                        name={getChatName(
+                        selectedChat={
                             selectedChat
-                        )}
-
-                        isGroup={
-                            selectedChat.isGroup
                         }
 
-                        members={
-                            selectedChat.members ?? []
+                        getChatName={
+                            getChatName
                         }
 
-                        currentUserId={
-                            user?.id
-                        }
-
-                        creatorId={
-                            selectedChat.creatorId
-                        }
-
-                        isGroupCreator={
-                            Boolean(
-                                selectedChat.isGroup &&
-                                Number(
-                                    selectedChat.creatorId
-                                ) ===
-                                    Number(
-                                        user?.id
-                                    )
-                            )
+                        onSelectChat={
+                            openChat
                         }
 
                         token={
                             token
                         }
 
-                        onAddGroupMember={
-                            handleAddGroupMember
-                        }
-
-                        onRemoveGroupMember={
-                            handleRemoveGroupMember
-                        }
-
-                        onDeleteChat={
-                            handleRequestDeleteChat
-                        }
-
-                        onBack={
-                            closeMobileChat
-                        }
-                    />
-
-
-                    <MessageList
-                        messages={
-                            safeMessages
-                        }
-
                         currentUserId={
                             user?.id
                         }
 
-                        onDeleteForEveryone={
-                            handleDeleteForEveryone
+                        onSelectUser={
+                            handleSelectUser
                         }
 
-                        onDeleteForMe={
-                            handleDeleteForMe
-                        }
-                    />
-
-
-                    <MessageInput
-                        onSend={
-                            handleSendMessage
+                        onGroupCreated={
+                            handleGroupCreated
                         }
                     />
-                </>
-            ) : (
-                <div
-                    style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems:
-                            "center",
-                        justifyContent:
-                            "center",
-                        color:
-                            "#777",
-                        background:
-                            "#fafafa",
-                        fontSize:
-                            "16px"
-                    }}
-                >
-                    Виберіть чат
-                </div>
-            )}
+                }
+            >
 
-        </MessengerLayout>
+
+                {/* =====================================
+                    PRIVATE CHAT REQUESTS
+                ====================================== */}
+
+                {safeChatRequests.length > 0 && (
+                    <div
+                        style={{
+                            position:
+                                "fixed",
+
+                            top:
+                                "20px",
+
+                            right:
+                                "20px",
+
+                            zIndex:
+                                1000,
+
+                            width:
+                                "360px",
+
+                            maxWidth:
+                                "calc(100vw - 40px)",
+
+                            display:
+                                "flex",
+
+                            flexDirection:
+                                "column",
+
+                            gap:
+                                "12px"
+                        }}
+                    >
+                        {safeChatRequests.map(
+                            (request) => (
+                                <div
+                                    key={
+                                        request.requestId
+                                    }
+
+                                    style={{
+                                        background:
+                                            "#ffffff",
+
+                                        border:
+                                            "1px solid #ddd",
+
+                                        borderRadius:
+                                            "12px",
+
+                                        padding:
+                                            "16px",
+
+                                        boxShadow:
+                                            "0 8px 30px rgba(0,0,0,0.15)"
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontWeight:
+                                                "600",
+
+                                            marginBottom:
+                                                "8px"
+                                        }}
+                                    >
+                                        Новий запит на чат
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            color:
+                                                "#555",
+
+                                            marginBottom:
+                                                "14px"
+                                        }}
+                                    >
+                                        <strong>
+                                            {
+                                                request
+                                                    .sender
+                                                    ?.nickname
+                                            }
+                                        </strong>{" "}
+                                        хоче почати з вами чат.
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            display:
+                                                "flex",
+
+                                            gap:
+                                                "8px"
+                                        }}
+                                    >
+                                        <button
+                                            type="button"
+
+                                            onClick={() =>
+                                                handleAcceptChatRequest(
+                                                    request
+                                                )
+                                            }
+
+                                            style={{
+                                                flex:
+                                                    1,
+
+                                                padding:
+                                                    "9px 12px",
+
+                                                border:
+                                                    "none",
+
+                                                borderRadius:
+                                                    "8px",
+
+                                                cursor:
+                                                    "pointer",
+
+                                                background:
+                                                    "#222",
+
+                                                color:
+                                                    "#fff"
+                                            }}
+                                        >
+                                            Залишити чат
+                                        </button>
+
+                                        <button
+                                            type="button"
+
+                                            onClick={() =>
+                                                handleRejectChatRequest(
+                                                    request
+                                                )
+                                            }
+
+                                            style={{
+                                                flex:
+                                                    1,
+
+                                                padding:
+                                                    "9px 12px",
+
+                                                border:
+                                                    "1px solid #ddd",
+
+                                                borderRadius:
+                                                    "8px",
+
+                                                cursor:
+                                                    "pointer",
+
+                                                background:
+                                                    "#fff",
+
+                                                color:
+                                                    "#333"
+                                            }}
+                                        >
+                                            Видалити
+                                        </button>
+                                    </div>
+                                </div>
+                            )
+                        )}
+                    </div>
+                )}
+
+
+                {/* =====================================
+                    GROUP INVITATIONS
+                ====================================== */}
+
+                {safeGroupInvitations.length > 0 && (
+                    <div
+                        style={{
+                            position:
+                                "fixed",
+
+                            top:
+                                safeChatRequests.length > 0
+                                    ? "200px"
+                                    : "20px",
+
+                            right:
+                                "20px",
+
+                            zIndex:
+                                999,
+
+                            width:
+                                "360px",
+
+                            maxWidth:
+                                "calc(100vw - 40px)",
+
+                            display:
+                                "flex",
+
+                            flexDirection:
+                                "column",
+
+                            gap:
+                                "12px"
+                        }}
+                    >
+                        {safeGroupInvitations.map(
+                            (invitation) => (
+                                <div
+                                    key={
+                                        invitation.invitationId
+                                    }
+
+                                    style={{
+                                        background:
+                                            "#ffffff",
+
+                                        border:
+                                            "1px solid #ddd",
+
+                                        borderRadius:
+                                            "12px",
+
+                                        padding:
+                                            "16px",
+
+                                        boxShadow:
+                                            "0 8px 30px rgba(0,0,0,0.15)"
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontWeight:
+                                                "600",
+
+                                            marginBottom:
+                                                "8px"
+                                        }}
+                                    >
+                                        Запрошення до групи
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            color:
+                                                "#555",
+
+                                            marginBottom:
+                                                "14px"
+                                        }}
+                                    >
+                                        <strong>
+                                            {
+                                                invitation
+                                                    .sender
+                                                    ?.nickname
+                                            }
+                                        </strong>{" "}
+                                        запросив вас до групи{" "}
+                                        <strong>
+                                            {
+                                                invitation
+                                                    .chatName
+                                            }
+                                        </strong>
+                                        .
+                                    </div>
+
+                                    <div
+                                        style={{
+                                            display:
+                                                "flex",
+
+                                            gap:
+                                                "8px"
+                                        }}
+                                    >
+                                        <button
+                                            type="button"
+
+                                            onClick={() =>
+                                                handleAcceptGroupInvitation(
+                                                    invitation
+                                                )
+                                            }
+
+                                            style={{
+                                                flex:
+                                                    1,
+
+                                                padding:
+                                                    "9px 12px",
+
+                                                border:
+                                                    "none",
+
+                                                borderRadius:
+                                                    "8px",
+
+                                                cursor:
+                                                    "pointer",
+
+                                                background:
+                                                    "#222",
+
+                                                color:
+                                                    "#fff"
+                                            }}
+                                        >
+                                            Приєднатися
+                                        </button>
+
+                                        <button
+                                            type="button"
+
+                                            onClick={() =>
+                                                handleIgnoreGroupInvitation(
+                                                    invitation
+                                                )
+                                            }
+
+                                            style={{
+                                                flex:
+                                                    1,
+
+                                                padding:
+                                                    "9px 12px",
+
+                                                border:
+                                                    "1px solid #ddd",
+
+                                                borderRadius:
+                                                    "8px",
+
+                                                cursor:
+                                                    "pointer",
+
+                                                background:
+                                                    "#fff",
+
+                                                color:
+                                                    "#333"
+                                            }}
+                                        >
+                                            Ігнорувати
+                                        </button>
+                                    </div>
+                                </div>
+                            )
+                        )}
+                    </div>
+                )}
+
+
+                {/* =====================================
+                    CHAT
+                ====================================== */}
+
+                {selectedChat ? (
+                    <>
+                        <ChatHeader
+                            name={
+                                getChatName(
+                                    selectedChat
+                                )
+                            }
+
+                            isGroup={
+                                selectedChat.isGroup
+                            }
+
+                            members={
+                                selectedChat.members ?? []
+                            }
+
+                            currentUserId={
+                                user?.id
+                            }
+
+                            creatorId={
+                                selectedChat.creatorId
+                            }
+
+                            isGroupCreator={
+                                Boolean(
+                                    selectedChat.isGroup &&
+                                    Number(
+                                        selectedChat.creatorId
+                                    ) ===
+                                        Number(
+                                            user?.id
+                                        )
+                                )
+                            }
+
+                            token={
+                                token
+                            }
+
+                            onAddGroupMember={
+                                handleAddGroupMember
+                            }
+
+                            onRemoveGroupMember={
+                                handleRemoveGroupMember
+                            }
+
+                            onDeleteChat={
+                                handleRequestDeleteChat
+                            }
+
+                            onBack={
+                                closeMobileChat
+                            }
+                        />
+
+
+                        <MessageList
+                            messages={
+                                safeMessages
+                            }
+
+                            currentUserId={
+                                user?.id
+                            }
+
+                            onDeleteForEveryone={
+                                handleDeleteForEveryone
+                            }
+
+                            onDeleteForMe={
+                                handleDeleteForMe
+                            }
+                        />
+
+
+                        <MessageInput
+                            onSend={
+                                handleSendMessage
+                            }
+                        />
+                    </>
+                ) : (
+                    <div
+                        style={{
+                            flex:
+                                1,
+
+                            display:
+                                "flex",
+
+                            alignItems:
+                                "center",
+
+                            justifyContent:
+                                "center",
+
+                            color:
+                                "#777",
+
+                            background:
+                                "#fafafa",
+
+                            fontSize:
+                                "16px"
+                        }}
+                    >
+                        Виберіть чат
+                    </div>
+                )}
+
+            </MessengerLayout>
         </>
     );
 }
