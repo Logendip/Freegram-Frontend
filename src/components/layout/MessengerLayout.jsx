@@ -4,29 +4,14 @@ function MessengerLayout({
     mobileChatOpen
 }) {
     return (
-        <div
-            className="messenger-layout"
-            style={{
-                height: "100dvh",
-                width: "100%",
-                display: "flex",
-                background: "#fff",
-                overflow: "hidden"
-            }}
-        >
+        <div className="messenger-layout">
+
             <aside
                 className={`messenger-sidebar ${
                     mobileChatOpen
-                        ? "mobile-chat-open"
+                        ? "is-hidden-mobile"
                         : ""
                 }`}
-                style={{
-                    width: "320px",
-                    minWidth: "320px",
-                    height: "100%",
-                    flexShrink: 0,
-                    overflow: "hidden"
-                }}
             >
                 {sidebar}
             </aside>
@@ -34,87 +19,230 @@ function MessengerLayout({
             <main
                 className={`messenger-main ${
                     mobileChatOpen
-                        ? "mobile-chat-open"
+                        ? "is-open-mobile"
                         : ""
                 }`}
-                style={{
-                    flex: 1,
-                    minWidth: 0,
-                    minHeight: 0,
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    overflow: "hidden"
-                }}
             >
                 {children}
             </main>
 
             <style>
                 {`
+                    * {
+                        box-sizing: border-box;
+                    }
+
+                    .messenger-layout {
+                        width: 100%;
+                        height: 100dvh;
+
+                        display: flex;
+
+                        position: relative;
+
+                        overflow: hidden;
+
+                        background: #ffffff;
+                    }
+
+                    /* ==========================================
+                       SIDEBAR
+                    ========================================== */
+
+                    .messenger-sidebar {
+                        width: 320px;
+                        min-width: 320px;
+                        max-width: 320px;
+
+                        height: 100%;
+
+                        flex: 0 0 320px;
+
+                        display: flex;
+
+                        position: relative;
+
+                        overflow: hidden;
+
+                        z-index: 2;
+                    }
+
+                    /* ==========================================
+                       MAIN CHAT
+                    ========================================== */
+
+                    .messenger-main {
+                        flex: 1 1 auto;
+
+                        width: auto;
+                        min-width: 0;
+                        max-width: none;
+
+                        height: 100%;
+                        min-height: 0;
+
+                        display: flex;
+                        flex-direction: column;
+
+                        position: relative;
+
+                        overflow: hidden;
+
+                        z-index: 1;
+                    }
+
+                    /* ==========================================
+                       TABLET / DESKTOP
+                    ========================================== */
+
                     @media (min-width: 769px) {
+
+                        .messenger-layout {
+                            display: flex;
+                        }
+
                         .messenger-sidebar {
-                            display: flex !important;
-                            transform: none !important;
+                            display: flex;
                         }
 
                         .messenger-main {
-                            display: flex !important;
-                            transform: none !important;
+                            display: flex;
                         }
                     }
 
+                    /* ==========================================
+                       MOBILE
+                    ========================================== */
+
                     @media (max-width: 768px) {
+
                         .messenger-layout {
-                            position: relative;
-                            width: 100%;
+                            width: 100vw;
                             height: 100dvh;
+
+                            min-width: 0;
+                            min-height: 0;
+
+                            display: block;
+
+                            position: relative;
+
                             overflow: hidden;
                         }
 
+                        /* --------------------------------------
+                           SIDEBAR
+                        -------------------------------------- */
+
                         .messenger-sidebar {
+                            width: 100vw;
+                            min-width: 100vw;
+                            max-width: 100vw;
+
+                            height: 100dvh;
+
                             position: absolute;
+
                             inset: 0;
-                            width: 100% !important;
-                            min-width: 100% !important;
-                            max-width: 100% !important;
-                            height: 100% !important;
+
+                            display: flex;
+
+                            flex: none;
+
                             overflow: hidden;
 
                             transform: translateX(0);
+
                             transition:
-                                transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+                                transform 280ms
+                                cubic-bezier(0.22, 1, 0.36, 1);
 
                             z-index: 2;
                         }
 
-                        .messenger-sidebar.mobile-chat-open {
+                        .messenger-sidebar.is-hidden-mobile {
                             transform: translateX(-100%);
                         }
 
+                        /* --------------------------------------
+                           MAIN CHAT
+                        -------------------------------------- */
+
                         .messenger-main {
+                            width: 100vw;
+                            min-width: 100vw;
+                            max-width: 100vw;
+
+                            height: 100dvh;
+                            min-height: 0;
+
                             position: absolute;
+
                             inset: 0;
-                            width: 100% !important;
-                            min-width: 100% !important;
-                            max-width: 100% !important;
-                            height: 100% !important;
+
+                            display: flex;
+
+                            flex: none;
+
                             overflow: hidden;
 
                             transform: translateX(100%);
+
                             transition:
-                                transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+                                transform 280ms
+                                cubic-bezier(0.22, 1, 0.36, 1);
 
                             z-index: 1;
                         }
 
-                        .messenger-main.mobile-chat-open {
+                        .messenger-main.is-open-mobile {
                             transform: translateX(0);
+
                             z-index: 3;
                         }
                     }
 
+                    /* ==========================================
+                       SMALL PHONES
+                    ========================================== */
+
+                    @media (max-width: 480px) {
+
+                        .messenger-layout {
+                            width: 100vw;
+                            height: 100dvh;
+                        }
+
+                        .messenger-sidebar,
+                        .messenger-main {
+                            width: 100vw;
+                            min-width: 100vw;
+                            max-width: 100vw;
+
+                            height: 100dvh;
+                        }
+                    }
+
+                    /* ==========================================
+                       VERY SMALL PHONES
+                    ========================================== */
+
+                    @media (max-width: 360px) {
+
+                        .messenger-sidebar,
+                        .messenger-main {
+                            width: 100vw;
+                            min-width: 100vw;
+                            max-width: 100vw;
+                        }
+                    }
+
+                    /* ==========================================
+                       REDUCE MOTION
+                    ========================================== */
+
                     @media (prefers-reduced-motion: reduce) {
+
                         .messenger-sidebar,
                         .messenger-main {
                             transition: none !important;
