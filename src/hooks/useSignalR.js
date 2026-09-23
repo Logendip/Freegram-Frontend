@@ -46,26 +46,7 @@ export function useSignalR({
 
 
     const callbacksRef =
-        useRef({
-            onReceiveMessage,
-            onMessageRead,
-
-            onMessageDeletedForEveryone,
-            onMessageDeletedForMe,
-
-            onChatDeleted,
-
-            onChatRequestCreated,
-            onChatRequestAccepted,
-            onChatRequestRejected,
-
-            onGroupInvitationReceived,
-            onGroupInvitationAccepted,
-            onGroupInvitationRejected,
-
-            onGroupMemberAdded,
-            onGroupMemberRemoved
-        });
+        useRef({});
 
 
     const [
@@ -74,145 +55,6 @@ export function useSignalR({
     ] = useState(
         HubConnectionState.Disconnected
     );
-
-
-    // ==========================================
-    // DEVICE / BROWSER DIAGNOSTICS
-    // ==========================================
-
-    useEffect(() => {
-
-        console.log(
-            "=========================================="
-        );
-
-        console.log(
-            "📱 Freegram SignalR diagnostics"
-        );
-
-        console.log(
-            "=========================================="
-        );
-
-        console.log(
-            "🌐 API URL:",
-            API_BASE_URL
-        );
-
-        console.log(
-            "📱 User Agent:",
-            navigator.userAgent
-        );
-
-        console.log(
-            "📐 Screen:",
-            `${window.innerWidth}x${window.innerHeight}`
-        );
-
-        console.log(
-            "🌍 Online:",
-            navigator.onLine
-        );
-
-        console.log(
-            "📄 Visibility:",
-            document.visibilityState
-        );
-
-        console.log(
-            "🔐 Token exists:",
-            Boolean(token)
-        );
-
-        console.log(
-            "=========================================="
-        );
-
-    }, [token]);
-
-
-    // ==========================================
-    // ONLINE / OFFLINE DIAGNOSTICS
-    // ==========================================
-
-    useEffect(() => {
-
-        const handleOnline = () => {
-
-            console.log(
-                "🟢 Browser/network ONLINE"
-            );
-
-        };
-
-
-        const handleOffline = () => {
-
-            console.warn(
-                "🔴 Browser/network OFFLINE"
-            );
-
-        };
-
-
-        const handleVisibilityChange = () => {
-
-            console.log(
-                "👁️ Page visibility changed:",
-                document.visibilityState
-            );
-
-            const connection =
-                connectionRef.current;
-
-            if (connection) {
-
-                console.log(
-                    "🔌 Current SignalR state:",
-                    connection.state
-                );
-
-            }
-
-        };
-
-
-        window.addEventListener(
-            "online",
-            handleOnline
-        );
-
-        window.addEventListener(
-            "offline",
-            handleOffline
-        );
-
-        document.addEventListener(
-            "visibilitychange",
-            handleVisibilityChange
-        );
-
-
-        return () => {
-
-            window.removeEventListener(
-                "online",
-                handleOnline
-            );
-
-            window.removeEventListener(
-                "offline",
-                handleOffline
-            );
-
-            document.removeEventListener(
-                "visibilitychange",
-                handleVisibilityChange
-            );
-
-        };
-
-    }, []);
 
 
     // ==========================================
@@ -269,7 +111,146 @@ export function useSignalR({
 
 
     // ==========================================
-    // CONNECTION
+    // DIAGNOSTICS
+    // ==========================================
+
+    useEffect(() => {
+
+        console.log(
+            "=========================================="
+        );
+
+        console.log(
+            "📱 Freegram SignalR diagnostics"
+        );
+
+        console.log(
+            "=========================================="
+        );
+
+        console.log(
+            "🌐 API URL:",
+            API_BASE_URL
+        );
+
+        console.log(
+            "📱 User Agent:",
+            navigator.userAgent
+        );
+
+        console.log(
+            "📐 Screen:",
+            `${window.innerWidth}x${window.innerHeight}`
+        );
+
+        console.log(
+            "🌍 Online:",
+            navigator.onLine
+        );
+
+        console.log(
+            "📄 Visibility:",
+            document.visibilityState
+        );
+
+        console.log(
+            "🔐 Token exists:",
+            Boolean(token)
+        );
+
+        console.log(
+            "=========================================="
+        );
+
+    }, [token]);
+
+
+    // ==========================================
+    // ONLINE / OFFLINE
+    // ==========================================
+
+    useEffect(() => {
+
+        const handleOnline = () => {
+
+            console.log(
+                "🟢 Browser/network ONLINE"
+            );
+
+        };
+
+
+        const handleOffline = () => {
+
+            console.warn(
+                "🔴 Browser/network OFFLINE"
+            );
+
+        };
+
+
+        const handleVisibilityChange = () => {
+
+            console.log(
+                "👁️ Page visibility:",
+                document.visibilityState
+            );
+
+            const connection =
+                connectionRef.current;
+
+            if (connection) {
+
+                console.log(
+                    "🔌 SignalR state:",
+                    connection.state
+                );
+
+            }
+
+        };
+
+
+        window.addEventListener(
+            "online",
+            handleOnline
+        );
+
+        window.addEventListener(
+            "offline",
+            handleOffline
+        );
+
+        document.addEventListener(
+            "visibilitychange",
+            handleVisibilityChange
+        );
+
+
+        return () => {
+
+            window.removeEventListener(
+                "online",
+                handleOnline
+            );
+
+            window.removeEventListener(
+                "offline",
+                handleOffline
+            );
+
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange
+            );
+
+        };
+
+    }, []);
+
+
+    // ==========================================
+    // SIGNALR CONNECTION
     // ==========================================
 
     useEffect(() => {
@@ -277,7 +258,7 @@ export function useSignalR({
         if (!token) {
 
             console.log(
-                "⚠️ SignalR: no token. Connection will not start."
+                "⚠️ SignalR: no token."
             );
 
             return;
@@ -341,7 +322,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "💬 ReceiveMessage received:",
+                    "💬 ReceiveMessage:",
                     data
                 );
 
@@ -363,7 +344,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "👁️ MessageRead received:",
+                    "👁️ MessageRead:",
                     data
                 );
 
@@ -385,7 +366,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "🗑️ MessageDeletedForEveryone received:",
+                    "🗑️ MessageDeletedForEveryone:",
                     data
                 );
 
@@ -407,7 +388,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "🗑️ MessageDeletedForMe received:",
+                    "🗑️ MessageDeletedForMe:",
                     data
                 );
 
@@ -429,7 +410,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "🗑️ ChatDeleted received:",
+                    "🗑️ ChatDeleted:",
                     data
                 );
 
@@ -443,7 +424,7 @@ export function useSignalR({
 
 
         // ==========================================
-        // PRIVATE CHAT REQUEST
+        // PRIVATE CHAT REQUEST CREATED
         // ==========================================
 
         connection.on(
@@ -455,7 +436,7 @@ export function useSignalR({
                 );
 
                 console.log(
-                    "🔥🔥🔥 ChatRequestCreated RECEIVED 🔥🔥🔥"
+                    "🔥 ChatRequestCreated RECEIVED"
                 );
 
                 console.log(
@@ -464,63 +445,14 @@ export function useSignalR({
                 );
 
                 console.log(
-                    "📱 Device:",
-                    navigator.userAgent
-                );
-
-                console.log(
-                    "🌐 Online:",
-                    navigator.onLine
-                );
-
-                console.log(
-                    "👁️ Visibility:",
-                    document.visibilityState
-                );
-
-                console.log(
-                    "🔌 SignalR state:",
-                    connection.state
-                );
-
-                console.log(
-                    "⏰ Time:",
-                    new Date().toISOString()
-                );
-
-                console.log(
                     "=========================================="
                 );
 
 
-                if (
-                    !callbacksRef.current
-                        .onChatRequestCreated
-                ) {
-
-                    console.error(
-                        "❌ onChatRequestCreated callback DOES NOT EXIST!"
-                    );
-
-                    return;
-
-                }
-
-
-                console.log(
-                    "➡️ Calling onChatRequestCreated callback..."
-                );
-
-
                 callbacksRef.current
-                    .onChatRequestCreated(
+                    .onChatRequestCreated?.(
                         data
                     );
-
-
-                console.log(
-                    "✅ onChatRequestCreated callback called."
-                );
 
             }
         );
@@ -535,7 +467,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "✅ ChatRequestAccepted received:",
+                    "✅ ChatRequestAccepted:",
                     data
                 );
 
@@ -557,7 +489,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "❌ ChatRequestRejected received:",
+                    "❌ ChatRequestRejected:",
                     data
                 );
 
@@ -579,14 +511,93 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "👥 GroupInvitationReceived received:",
+                    "=========================================="
+                );
+
+                console.log(
+                    "🔥🔥🔥 GROUP INVITATION RECEIVED 🔥🔥🔥"
+                );
+
+                console.log(
+                    "📦 Invitation data:",
                     data
                 );
 
-                callbacksRef.current
-                    .onGroupInvitationReceived?.(
-                        data
+                console.log(
+                    "📱 Device:",
+                    navigator.userAgent
+                );
+
+                console.log(
+                    "🌍 Online:",
+                    navigator.onLine
+                );
+
+                console.log(
+                    "👁️ Visibility:",
+                    document.visibilityState
+                );
+
+                console.log(
+                    "🔌 SignalR state:",
+                    connection.state
+                );
+
+                console.log(
+                    "⏰ Time:",
+                    new Date().toISOString()
+                );
+
+                console.log(
+                    "Callback exists:",
+                    Boolean(
+                        callbacksRef.current
+                            .onGroupInvitationReceived
+                    )
+                );
+
+                console.log(
+                    "=========================================="
+                );
+
+
+                const callback =
+                    callbacksRef.current
+                        .onGroupInvitationReceived;
+
+
+                if (!callback) {
+
+                    console.error(
+                        "❌ onGroupInvitationReceived callback DOES NOT EXIST!"
                     );
+
+                    return;
+
+                }
+
+
+                console.log(
+                    "➡️ Calling onGroupInvitationReceived..."
+                );
+
+
+                try {
+
+                    callback(data);
+
+                    console.log(
+                        "✅ onGroupInvitationReceived executed successfully."
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "❌ ERROR INSIDE onGroupInvitationReceived:",
+                        error
+                    );
+
+                }
 
             }
         );
@@ -601,7 +612,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "👥 GroupInvitationAccepted received:",
+                    "👥 GroupInvitationAccepted:",
                     data
                 );
 
@@ -623,7 +634,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "❌ GroupInvitationRejected received:",
+                    "❌ GroupInvitationRejected:",
                     data
                 );
 
@@ -645,7 +656,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "👤 GroupMemberAdded received:",
+                    "👤 GroupMemberAdded:",
                     data
                 );
 
@@ -667,7 +678,7 @@ export function useSignalR({
             (data) => {
 
                 console.log(
-                    "👤 GroupMemberRemoved received:",
+                    "👤 GroupMemberRemoved:",
                     data
                 );
 
@@ -688,19 +699,9 @@ export function useSignalR({
             (error) => {
 
                 console.warn(
-                    "🟠 SignalR RECONNECTING..."
-                );
-
-                console.warn(
-                    "Reason:",
+                    "🟠 SignalR RECONNECTING...",
                     error
                 );
-
-                console.warn(
-                    "Current state:",
-                    connection.state
-                );
-
 
                 setConnectionState(
                     HubConnectionState.Reconnecting
@@ -756,11 +757,6 @@ export function useSignalR({
                     error
                 );
 
-                console.error(
-                    "State:",
-                    connection.state
-                );
-
 
                 setConnectionState(
                     HubConnectionState.Disconnected
@@ -771,7 +767,7 @@ export function useSignalR({
 
 
         // ==========================================
-        // START CONNECTION
+        // START
         // ==========================================
 
         console.log(
@@ -803,21 +799,6 @@ export function useSignalR({
                 );
 
                 console.log(
-                    "📱 User Agent:",
-                    navigator.userAgent
-                );
-
-                console.log(
-                    "🌐 Online:",
-                    navigator.onLine
-                );
-
-                console.log(
-                    "👁️ Visibility:",
-                    document.visibilityState
-                );
-
-                console.log(
                     "⏰ Time:",
                     new Date().toISOString()
                 );
@@ -840,11 +821,10 @@ export function useSignalR({
                 );
 
                 console.error(
-                    "🔴🔴🔴 SIGNALR CONNECTION ERROR 🔴🔴🔴"
+                    "🔴 SIGNALR CONNECTION ERROR"
                 );
 
                 console.error(
-                    "Error:",
                     error
                 );
 
@@ -856,21 +836,6 @@ export function useSignalR({
                 console.error(
                     "Stack:",
                     error?.stack
-                );
-
-                console.error(
-                    "API URL:",
-                    API_BASE_URL
-                );
-
-                console.error(
-                    "SignalR URL:",
-                    `${API_BASE_URL}/hubs/chat`
-                );
-
-                console.error(
-                    "Online:",
-                    navigator.onLine
                 );
 
                 console.error(
@@ -896,27 +861,36 @@ export function useSignalR({
             );
 
 
-            connection
-                .stop()
-                .then(() => {
+            if (
+                connection.state !==
+                HubConnectionState.Disconnected
+            ) {
 
-                    console.log(
-                        "🔌 SignalR connection stopped."
+                connection
+                    .stop()
+                    .catch(
+                        (error) => {
+
+                            console.error(
+                                "❌ Error stopping SignalR:",
+                                error
+                            );
+
+                        }
                     );
 
-                })
-                .catch((error) => {
-
-                    console.error(
-                        "❌ Error stopping SignalR:",
-                        error
-                    );
-
-                });
+            }
 
 
-            connectionRef.current =
-                null;
+            if (
+                connectionRef.current ===
+                connection
+            ) {
+
+                connectionRef.current =
+                    null;
+
+            }
 
         };
 
@@ -936,10 +910,6 @@ export function useSignalR({
 
 
                 if (!connection) {
-
-                    console.error(
-                        "❌ SignalR connection is not initialized."
-                    );
 
                     throw new Error(
                         "SignalR connection is not initialized."
@@ -961,13 +931,12 @@ export function useSignalR({
                 if (
                     connection.state ===
                         HubConnectionState.Connecting ||
-
                     connection.state ===
                         HubConnectionState.Reconnecting
                 ) {
 
                     console.log(
-                        "⏳ Waiting for SignalR connection..."
+                        "⏳ Waiting for SignalR..."
                     );
 
 
@@ -1003,14 +972,35 @@ export function useSignalR({
 
                                         resolve();
 
-                                    } else {
-
-                                        setTimeout(
-                                            check,
-                                            100
-                                        );
+                                        return;
 
                                     }
+
+
+                                    if (
+                                        connection.state ===
+                                            HubConnectionState.Disconnected
+                                    ) {
+
+                                        clearTimeout(
+                                            timeout
+                                        );
+
+                                        reject(
+                                            new Error(
+                                                "SignalR disconnected."
+                                            )
+                                        );
+
+                                        return;
+
+                                    }
+
+
+                                    setTimeout(
+                                        check,
+                                        100
+                                    );
 
                                 };
 
@@ -1026,17 +1016,8 @@ export function useSignalR({
                 }
 
 
-                console.error(
-                    "❌ SignalR is not connected.",
-                    {
-                        state:
-                            connection.state
-                    }
-                );
-
-
                 throw new Error(
-                    "SignalR is not connected."
+                    `SignalR is not connected. State: ${connection.state}`
                 );
 
             },
@@ -1086,13 +1067,12 @@ export function useSignalR({
 
                 if (
                     !connection ||
-
                     connection.state !==
                         HubConnectionState.Connected
                 ) {
 
                     console.warn(
-                        "⚠️ LeaveChat skipped. SignalR is not connected."
+                        "⚠️ LeaveChat skipped."
                     );
 
                     return;
@@ -1166,15 +1146,6 @@ export function useSignalR({
                     await waitForConnection();
 
 
-                console.log(
-                    "👁️ MarkMessageAsRead:",
-                    {
-                        chatId,
-                        messageId
-                    }
-                );
-
-
                 await connection.invoke(
                     "MarkMessageAsRead",
                     chatId,
@@ -1201,15 +1172,6 @@ export function useSignalR({
                     await waitForConnection();
 
 
-                console.log(
-                    "🗑️ DeleteMessageForEveryone:",
-                    {
-                        chatId,
-                        messageId
-                    }
-                );
-
-
                 await connection.invoke(
                     "DeleteMessageForEveryone",
                     chatId,
@@ -1234,15 +1196,6 @@ export function useSignalR({
 
                 const connection =
                     await waitForConnection();
-
-
-                console.log(
-                    "🗑️ DeleteMessageForMe:",
-                    {
-                        chatId,
-                        messageId
-                    }
-                );
 
 
                 await connection.invoke(
@@ -1276,4 +1229,3 @@ export function useSignalR({
     };
 
 }
-
